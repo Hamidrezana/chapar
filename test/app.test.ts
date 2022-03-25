@@ -1,4 +1,4 @@
-import { Chapar } from '../src';
+import Chapar from '../src';
 
 describe('Chapar Tests', () => {
   it('Chapar should work correctly', async () => {

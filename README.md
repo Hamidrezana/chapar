@@ -23,7 +23,7 @@ $ yarn add @hamidrezana/chapar
 Firstly import `Chapar`
 
 ```js
-import { Chapar } from '@hamidrezana/chapar';
+import Chapar from '@hamidrezana/chapar';
 ```
 
 Then create new instant of Chapar

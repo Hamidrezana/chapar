@@ -1,1 +1,3 @@
-export { default as Chapar } from './core/Chapar';
+import Chapar from './core/Chapar';
+
+export default Chapar;
