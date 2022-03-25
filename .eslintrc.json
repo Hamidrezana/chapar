@@ -1,0 +1,61 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": [
+    "plugin:react/recommended",
+    "airbnb",
+    "airbnb-typescript",
+    "airbnb/hooks",
+    "prettier",
+    "eslint-config-prettier",
+    "plugin:@typescript-eslint/recommended",
+    "next/core-web-vitals"
+    // "prettier/react",
+    // "prettier/@typescript-eslint",
+    // "plugin:prettier/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "ecmaVersion": 13,
+    "sourceType": "module",
+    "project": "./tsconfig.json"
+  },
+  "globals": {
+    "Atomics": "readonly",
+    "SharedArrayBuffer": "readonly",
+    "$NullType": "readonly",
+    "$DeepPartial": "readonly",
+    "$Without": "readonly",
+    "$NullUndefinedType": "readonly",
+    "$MapType": "readonly",
+    "$VoidFunc": "readonly"
+  },
+  "plugins": ["react", "@typescript-eslint", "eslint-plugin-prettier"],
+  "rules": {
+    "prettier/prettier": ["error"],
+    "@typescript-eslint/lines-between-class-members": 0,
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/comma-dangle": "off",
+    "arrow-body-style": "off",
+    "react/jsx-props-no-spreading": "off",
+    "react/require-default-props": "off",
+    "react/function-component-definition": "off",
+    "max-classes-per-file": "off",
+    "import/prefer-default-export": "off",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/no-empty-interface": "off",
+    "react-hooks/exhaustive-deps": 0,
+    "react/jsx-no-useless-fragment": 0,
+    "import/no-cycle": 0,
+    "class-methods-use-this": "off",
+    "import/no-extraneous-dependencies": [
+      "error",
+      { "devDependencies": true, "optionalDependencies": false, "peerDependencies": false }
+    ]
+  }
+}
