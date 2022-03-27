@@ -1,16 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import Utils from '../utils';
 import { logger } from '../libs/Logger';
-import { CreateUrlArgs, Response, SetupInterceptorArgs } from '../types';
-import { SendChaparArgs, SendChaparReturnType } from '../types';
+import {
+  Response,
+  BaseUrlType,
+  CreateUrlArgs,
+  SendChaparArgs,
+  SetupInterceptorArgs,
+  SendChaparReturnType,
+} from '../types';
 
 class Chapar {
   private agent: AxiosInstance;
   private successStatusCode = [200, 201];
 
-  constructor(baseUrl?: string) {
+  constructor(baseUrl?: BaseUrlType) {
     this.agent = axios.create({
-      baseURL: baseUrl,
+      baseURL: Utils.TypeUtils.isString(baseUrl) ? (baseUrl as string) : undefined,
       headers: {
         'Content-Type': 'application/json',
       },

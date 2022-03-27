@@ -5,6 +5,8 @@ export interface Query {
   value: string | null;
 }
 
+export type BaseUrlType = string | Record<string, string>;
+
 export interface CreateUrlArgs {
   url: string;
   args?: Array<string>;
