@@ -11,11 +11,11 @@ import {
   SendChaparReturnType,
 } from '../types';
 
-class Chapar {
+class Chapar<T extends BaseUrlType = BaseUrlType> {
   private agent: AxiosInstance;
   private successStatusCode = [200, 201];
 
-  constructor(baseUrl?: BaseUrlType) {
+  constructor(public baseUrl?: T) {
     this.agent = axios.create({
       baseURL: Utils.TypeUtils.isString(baseUrl) ? (baseUrl as string) : undefined,
       headers: {
@@ -40,7 +40,7 @@ class Chapar {
     );
   }
 
-  createUrl({ url, queries = [], args = [] }: CreateUrlArgs): string {
+  createUrl({ url, queries = [], args = [] }: CreateUrlArgs<T>): string {
     let finalUrl = [url, ...args].join('/');
 
     queries.forEach((query, i) => {

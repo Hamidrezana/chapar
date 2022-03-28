@@ -5,10 +5,14 @@ export interface Query {
   value: string | null;
 }
 
-export type BaseUrlType = string | Record<string, string>;
+export type MultipleBaseUrlType = Record<string, string>;
+export type BaseUrlType = string | MultipleBaseUrlType;
 
-export interface CreateUrlArgs {
+export interface CreateUrlArgs<TBaseUrlType = string> {
   url: string;
+  baseUrlType?: Extract<TBaseUrlType, MultipleBaseUrlType | undefined> extends never
+    ? TBaseUrlType
+    : keyof TBaseUrlType;
   args?: Array<string>;
   queries?: Array<Query>;
 }
