@@ -30,11 +30,12 @@ export interface SetupInterceptorArgs {
  * @template R => Chapar Response
  * @template D => Transformed Data
  */
-export interface SendChaparArgs<T = any, R = any, D = any> {
+export interface SendChaparArgs<T = any, R = any, D = any, TCreateUrlArgs = string> {
   method?: 'get' | 'post' | 'put';
   body?: T;
   setToken?: boolean;
   headers?: Record<string, any>;
+  urlProps?: Pick<CreateUrlArgs<TCreateUrlArgs>, 'baseUrlType' | 'args' | 'queries'>;
   dto?: (payload: R) => $NullType<D>;
 }
 

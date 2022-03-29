@@ -11,11 +11,11 @@ import {
   SendChaparReturnType,
 } from '../types';
 
-class Chapar<T extends BaseUrlType = BaseUrlType> {
+class Chapar<TBaseUrlType extends BaseUrlType = BaseUrlType> {
   private agent: AxiosInstance;
   private successStatusCode = [200, 201];
 
-  constructor(public baseUrl?: T) {
+  constructor(public baseUrl?: TBaseUrlType) {
     this.agent = axios.create({
       baseURL: Utils.TypeUtils.isString(baseUrl) ? (baseUrl as string) : undefined,
       headers: {
@@ -40,7 +40,7 @@ class Chapar<T extends BaseUrlType = BaseUrlType> {
     );
   }
 
-  createUrl({ url, queries = [], args = [] }: CreateUrlArgs<T>): string {
+  createUrl({ url, queries = [], args = [] }: CreateUrlArgs<TBaseUrlType>): string {
     let finalUrl = [url, ...args].join('/');
 
     queries.forEach((query, i) => {
@@ -64,10 +64,11 @@ class Chapar<T extends BaseUrlType = BaseUrlType> {
    */
   async sendChapar<T = any, R = any, B = Record<string, any>>(
     url: string,
-    configs: SendChaparArgs<B, R, T> = { method: 'get', headers: {} },
+    configs: SendChaparArgs<B, R, T, TBaseUrlType> = { method: 'get', headers: {} },
   ): Promise<SendChaparReturnType<T>> {
-    const { method, body, headers, dto } = configs;
+    const { method, body, headers, urlProps, dto } = configs;
     let response: AxiosResponse<Response<R>>;
+    const finalUrl = urlProps ? this.createUrl({ url, ...urlProps }) : url;
     try {
       const config: AxiosRequestConfig = {
         headers,
@@ -75,11 +76,11 @@ class Chapar<T extends BaseUrlType = BaseUrlType> {
       switch (method) {
         case 'post':
         case 'put':
-          response = await this.agent[method](url, body, config);
+          response = await this.agent[method](finalUrl, body, config);
           break;
         case 'get':
         default:
-          response = await this.agent.get(url, config);
+          response = await this.agent.get(finalUrl, config);
           break;
       }
       const isSuccess = !!(this.isSuccessStatus(response.status) || response.data.success);
