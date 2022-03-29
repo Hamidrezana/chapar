@@ -1,16 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import Utils from '../utils';
 import { logger } from '../libs/Logger';
-import { CreateUrlArgs, Response, SetupInterceptorArgs } from '../types';
-import { SendChaparArgs, SendChaparReturnType } from '../types';
+import {
+  Response,
+  BaseUrlType,
+  CreateUrlArgs,
+  SendChaparArgs,
+  SetupInterceptorArgs,
+  SendChaparReturnType,
+} from '../types';
 
-class Chapar {
+class Chapar<TBaseUrlType extends BaseUrlType = BaseUrlType> {
   private agent: AxiosInstance;
   private successStatusCode = [200, 201];
 
-  constructor(baseUrl?: string) {
+  constructor(public baseUrl?: TBaseUrlType) {
     this.agent = axios.create({
-      baseURL: baseUrl,
+      baseURL: Utils.TypeUtils.isString(baseUrl) ? (baseUrl as string) : undefined,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -33,7 +40,7 @@ class Chapar {
     );
   }
 
-  createUrl({ url, queries = [], args = [] }: CreateUrlArgs): string {
+  createUrl({ url, queries = [], args = [] }: CreateUrlArgs<TBaseUrlType>): string {
     let finalUrl = [url, ...args].join('/');
 
     queries.forEach((query, i) => {
@@ -57,10 +64,11 @@ class Chapar {
    */
   async sendChapar<T = any, R = any, B = Record<string, any>>(
     url: string,
-    configs: SendChaparArgs<B, R, T> = { method: 'get', headers: {} },
+    configs: SendChaparArgs<B, R, T, TBaseUrlType> = { method: 'get', headers: {} },
   ): Promise<SendChaparReturnType<T>> {
-    const { method, body, headers, dto } = configs;
+    const { method, body, headers, urlProps, dto } = configs;
     let response: AxiosResponse<Response<R>>;
+    const finalUrl = urlProps ? this.createUrl({ url, ...urlProps }) : url;
     try {
       const config: AxiosRequestConfig = {
         headers,
@@ -68,11 +76,11 @@ class Chapar {
       switch (method) {
         case 'post':
         case 'put':
-          response = await this.agent[method](url, body, config);
+          response = await this.agent[method](finalUrl, body, config);
           break;
         case 'get':
         default:
-          response = await this.agent.get(url, config);
+          response = await this.agent.get(finalUrl, config);
           break;
       }
       const isSuccess = !!(this.isSuccessStatus(response.status) || response.data.success);
