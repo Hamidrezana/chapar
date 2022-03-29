@@ -7,20 +7,26 @@ export interface Query {
   value: string | null;
 }
 
+export interface ChaparResponse<Data = any> {
+  success: boolean;
+  data: Data;
+  message?: string;
+}
+
 export type MultipleBaseUrlType = Record<string, string>;
 export type BaseUrlType = string | MultipleBaseUrlType;
-export type OnErrorCallbackType = <R>(err: AxiosError<Response<R>>) => void;
+export type OnErrorCallbackType = <Data>(err: AxiosError<ChaparResponse<Data>>) => void;
 
-export interface ChaparConstructorArgs<T> {
-  baseUrl?: T;
+export interface ChaparConstructorArgs<BaseUrl> {
+  baseUrl?: BaseUrl;
   onError?: OnErrorCallbackType;
 }
 
-export interface CreateUrlArgs<TBaseUrlType = string> {
+export interface CreateUrlArgs<BaseUrl = string> {
   url: string;
-  baseUrlType?: Extract<TBaseUrlType, MultipleBaseUrlType | undefined> extends never
-    ? TBaseUrlType
-    : keyof TBaseUrlType;
+  baseUrlType?: Extract<BaseUrl, MultipleBaseUrlType | undefined> extends never
+    ? BaseUrl
+    : keyof BaseUrl;
   args?: Array<string>;
   queries?: Array<Query>;
 }
@@ -33,29 +39,18 @@ export interface SetupInterceptorArgs {
   on401Callback: $VoidFunc;
 }
 
-/**
- * @template T => Chapar body
- * @template R => Chapar Response
- * @template D => Transformed Data
- */
-export interface SendChaparArgs<T = any, R = any, D = any, TCreateUrlArgs = string> {
+export interface SendChaparArgs<Body = any, Response = any, Result = any, CreateUrl = string> {
   method?: 'get' | 'post' | 'put' | 'delete';
-  body?: T;
+  body?: Body;
   setToken?: boolean;
   headers?: Record<string, any>;
-  urlProps?: Pick<CreateUrlArgs<TCreateUrlArgs>, 'baseUrlType' | 'args' | 'queries'>;
-  dto?: (payload: R) => $NullType<D>;
+  urlProps?: Pick<CreateUrlArgs<CreateUrl>, 'baseUrlType' | 'args' | 'queries'>;
+  dto?: (payload: Response) => $NullType<Result>;
 }
 
-export interface Response<T = any> {
+export interface SendChaparReturnType<Data = any> {
   success: boolean;
-  data: T;
-  message?: string;
-}
-
-export interface SendChaparReturnType<T = any> {
-  success: boolean;
-  data: $NullType<T>;
+  data: $NullType<Data>;
   message?: string;
 }
 

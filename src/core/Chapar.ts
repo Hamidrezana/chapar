@@ -3,7 +3,7 @@ import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } f
 import Utils from '../utils';
 import { logger } from '../libs/Logger';
 import {
-  Response,
+  ChaparResponse,
   BaseUrlType,
   CreateUrlArgs,
   SendChaparArgs,
@@ -13,13 +13,13 @@ import {
   OnErrorCallbackType,
 } from '../types';
 
-class Chapar<TBaseUrlType extends BaseUrlType = BaseUrlType> {
-  public baseUrl?: TBaseUrlType;
+class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
+  public baseUrl?: BaseUrl;
   private agent: AxiosInstance;
   private successStatusCode = [200, 201];
   public onError?: OnErrorCallbackType;
 
-  constructor({ baseUrl, onError }: ChaparConstructorArgs<TBaseUrlType>) {
+  constructor({ baseUrl, onError }: ChaparConstructorArgs<BaseUrl>) {
     this.baseUrl = baseUrl;
     this.onError = onError;
     this.agent = axios.create({
@@ -46,7 +46,7 @@ class Chapar<TBaseUrlType extends BaseUrlType = BaseUrlType> {
     );
   }
 
-  createUrl({ url, queries = [], args = [] }: CreateUrlArgs<TBaseUrlType>): string {
+  createUrl({ url, queries = [], args = [] }: CreateUrlArgs<BaseUrl>): string {
     let finalUrl = [url, ...args].join('/');
 
     queries.forEach((query, i) => {
@@ -63,17 +63,12 @@ class Chapar<TBaseUrlType extends BaseUrlType = BaseUrlType> {
     return finalUrl;
   }
 
-  /**
-   * @template T => Final Data (Result)
-   * @template R => Chapar Response (Response)
-   * @template B => Chapar Body (Body)
-   */
-  async sendChapar<T = any, R = any, B = Record<string, any>>(
+  async sendChapar<Result = any, Response = any, Body = Record<string, any>>(
     url: string,
-    configs: SendChaparArgs<B, R, T, TBaseUrlType> = { method: 'get', headers: {} },
-  ): Promise<SendChaparReturnType<T>> {
+    configs: SendChaparArgs<Body, Response, Result, BaseUrl> = { method: 'get', headers: {} },
+  ): Promise<SendChaparReturnType<Result>> {
     const { method, body, headers, urlProps, dto } = configs;
-    let response: AxiosResponse<Response<R>>;
+    let response: AxiosResponse<ChaparResponse<Response>>;
     const finalUrl = urlProps ? this.createUrl({ url, ...urlProps }) : url;
     try {
       const config: AxiosRequestConfig = {
@@ -96,14 +91,14 @@ class Chapar<TBaseUrlType extends BaseUrlType = BaseUrlType> {
           break;
       }
       const isSuccess = !!(this.isSuccessStatus(response.status) || response.data.success);
-      const finalData: R = response.data.data || (response.data as unknown as R);
+      const finalData: Response = response.data.data || (response.data as unknown as Response);
       return {
         success: isSuccess,
-        data: dto ? dto(finalData) : (finalData as unknown as T),
+        data: dto ? dto(finalData) : (finalData as unknown as Result),
         message: response.data.message,
       };
     } catch (err) {
-      const error = err as AxiosError<Response<R>>;
+      const error = err as AxiosError<ChaparResponse<Response>>;
       this.onError?.(error);
       logger(err, {
         fileName: 'Request Error',
