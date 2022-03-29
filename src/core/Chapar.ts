@@ -84,6 +84,12 @@ class Chapar<TBaseUrlType extends BaseUrlType = BaseUrlType> {
         case 'put':
           response = await this.agent[method](finalUrl, body, config);
           break;
+        case 'delete':
+          response = await this.agent.delete(finalUrl, {
+            data: body,
+            ...config,
+          });
+          break;
         case 'get':
         default:
           response = await this.agent.get(finalUrl, config);

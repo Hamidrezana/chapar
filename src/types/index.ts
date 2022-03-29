@@ -39,7 +39,7 @@ export interface SetupInterceptorArgs {
  * @template D => Transformed Data
  */
 export interface SendChaparArgs<T = any, R = any, D = any, TCreateUrlArgs = string> {
-  method?: 'get' | 'post' | 'put';
+  method?: 'get' | 'post' | 'put' | 'delete';
   body?: T;
   setToken?: boolean;
   headers?: Record<string, any>;
