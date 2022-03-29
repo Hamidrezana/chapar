@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { AxiosError } from 'axios';
+
 export interface Query {
   key: string;
   value: string | null;
@@ -7,6 +9,12 @@ export interface Query {
 
 export type MultipleBaseUrlType = Record<string, string>;
 export type BaseUrlType = string | MultipleBaseUrlType;
+export type OnErrorCallbackType = <R>(err: AxiosError<Response<R>>) => void;
+
+export interface ChaparConstructorArgs<T> {
+  baseUrl?: T;
+  onError?: OnErrorCallbackType;
+}
 
 export interface CreateUrlArgs<TBaseUrlType = string> {
   url: string;

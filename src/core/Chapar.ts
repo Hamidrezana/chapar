@@ -9,13 +9,19 @@ import {
   SendChaparArgs,
   SetupInterceptorArgs,
   SendChaparReturnType,
+  ChaparConstructorArgs,
+  OnErrorCallbackType,
 } from '../types';
 
 class Chapar<TBaseUrlType extends BaseUrlType = BaseUrlType> {
+  public baseUrl?: TBaseUrlType;
   private agent: AxiosInstance;
   private successStatusCode = [200, 201];
+  public onError?: OnErrorCallbackType;
 
-  constructor(public baseUrl?: TBaseUrlType) {
+  constructor({ baseUrl, onError }: ChaparConstructorArgs<TBaseUrlType>) {
+    this.baseUrl = baseUrl;
+    this.onError = onError;
     this.agent = axios.create({
       baseURL: Utils.TypeUtils.isString(baseUrl) ? (baseUrl as string) : undefined,
       headers: {
@@ -92,9 +98,7 @@ class Chapar<TBaseUrlType extends BaseUrlType = BaseUrlType> {
       };
     } catch (err) {
       const error = err as AxiosError<Response<R>>;
-      // if (error?.response?.data.message) {
-      //   showSnackbar({ message: error.response?.data.message, variant: 'error' });
-      // }
+      this.onError?.(error);
       logger(err, {
         fileName: 'Request Error',
         description: JSON.stringify(error?.config),
