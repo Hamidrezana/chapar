@@ -46,30 +46,26 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
     );
   }
 
-  createUrl({ url, queries = [], args = [] }: CreateUrlArgs<BaseUrl>): string {
-    let finalUrl = [url, ...args].join('/');
-
-    queries.forEach((query, i) => {
-      if (queries[i].value) {
-        if (i === 0) {
-          finalUrl += '?';
-        }
-        finalUrl += `${query.key}=${query.value}`;
-        if (i !== queries.length - 1) {
-          finalUrl += '&';
-        }
-      }
-    });
-    return finalUrl;
+  createUrl({ url, queries = {}, args = [] }: CreateUrlArgs<BaseUrl>): string {
+    const basicUrl = [url, ...args].join('/');
+    const queriesParams = [];
+    for (let q in queries) {
+      if (Utils.TypeUtils.isNil(queries[q])) continue;
+      queriesParams.push(encodeURIComponent(q) + '=' + encodeURIComponent(queries[q]!));
+    }
+    if (queriesParams.length > 0) {
+      return `${basicUrl}?${queriesParams.join('&')}`;
+    }
+    return basicUrl;
   }
 
   async sendChapar<Result = any, Response = any, Body = Record<string, any>>(
-    url: string,
-    configs: SendChaparArgs<Body, Response, Result, BaseUrl> = { method: 'get', headers: {} },
+    url: string | CreateUrlArgs<BaseUrl>,
+    configs: SendChaparArgs<Body, Response, Result> = { method: 'get', headers: {} },
   ): Promise<SendChaparReturnType<Result>> {
-    const { method, body, headers, urlProps, dto } = configs;
+    const { method, body, headers, dto } = configs;
     let response: AxiosResponse<ChaparResponse<Response>>;
-    const finalUrl = urlProps ? this.createUrl({ url, ...urlProps }) : url;
+    const finalUrl = typeof url === 'string' ? url : this.createUrl(url);
     try {
       const config: AxiosRequestConfig = {
         headers,

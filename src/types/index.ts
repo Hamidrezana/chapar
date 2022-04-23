@@ -2,10 +2,7 @@
 
 import { AxiosError } from 'axios';
 
-export interface Query {
-  key: string;
-  value: string | null;
-}
+export type QueryType = Record<string, string | number | null | undefined>;
 
 export interface ChaparResponse<Data = any> {
   success: boolean;
@@ -28,7 +25,7 @@ export interface CreateUrlArgs<BaseUrl = string> {
     ? BaseUrl
     : keyof BaseUrl;
   args?: Array<string>;
-  queries?: Array<Query>;
+  queries?: QueryType;
 }
 
 export interface SetupAgentArgs {
@@ -39,12 +36,11 @@ export interface SetupInterceptorArgs {
   on401Callback: $VoidFunc;
 }
 
-export interface SendChaparArgs<Body = any, Response = any, Result = any, CreateUrl = string> {
+export interface SendChaparArgs<Body = any, Response = any, Result = any> {
   method?: 'get' | 'post' | 'put' | 'delete';
   body?: Body;
   setToken?: boolean;
   headers?: Record<string, any>;
-  urlProps?: Pick<CreateUrlArgs<CreateUrl>, 'baseUrlType' | 'args' | 'queries'>;
   dto?: (payload: Response) => $NullType<Result>;
 }
 
