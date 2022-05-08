@@ -17,6 +17,7 @@ export type OnErrorCallbackType = <Data>(err: AxiosError<ChaparResponse<Data>>) 
 export interface ChaparConstructorArgs<BaseUrl> {
   baseUrl?: BaseUrl;
   onError?: OnErrorCallbackType;
+  authToken?: AuthToken;
 }
 
 export interface CreateUrlArgs<BaseUrl = string> {
@@ -51,3 +52,5 @@ export interface SendChaparReturnType<Data = any> {
 }
 
 export type ChaparFunc<T> = Promise<SendChaparReturnType<T>>;
+export type AuthTokenFunc = () => string;
+export type AuthToken = string | AuthTokenFunc;

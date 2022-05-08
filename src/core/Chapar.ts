@@ -11,6 +11,8 @@ import {
   SendChaparReturnType,
   ChaparConstructorArgs,
   OnErrorCallbackType,
+  AuthToken,
+  AuthTokenFunc,
 } from '../types';
 
 class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
@@ -18,10 +20,12 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
   private agent: AxiosInstance;
   private successStatusCode = [200, 201];
   public onError?: OnErrorCallbackType;
+  public authToken?: AuthToken;
 
-  constructor({ baseUrl, onError }: ChaparConstructorArgs<BaseUrl>) {
+  constructor({ baseUrl, authToken, onError }: ChaparConstructorArgs<BaseUrl>) {
     this.baseUrl = baseUrl;
     this.onError = onError;
+    this.authToken = authToken;
     this.agent = axios.create({
       baseURL: Utils.TypeUtils.isString(baseUrl) ? (baseUrl as string) : undefined,
       headers: {
@@ -63,12 +67,19 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
     url: string | CreateUrlArgs<BaseUrl>,
     configs: SendChaparArgs<Body, Response, Result> = { method: 'get', headers: {} },
   ): Promise<SendChaparReturnType<Result>> {
-    const { method, body, headers, dto } = configs;
+    const { method, body, headers, setToken, dto } = configs;
     let response: AxiosResponse<ChaparResponse<Response>>;
     const finalUrl = typeof url === 'string' ? url : this.createUrl(url);
+    const finalHeaders = headers || {};
+    if (setToken) {
+      const token = this.getAuthToken();
+      if (token) {
+        finalHeaders.Authorization = token;
+      }
+    }
     try {
       const config: AxiosRequestConfig = {
-        headers,
+        headers: finalHeaders,
       };
       switch (method) {
         case 'post':
@@ -109,6 +120,16 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
 
   private isSuccessStatus(statusCode: number) {
     return this.successStatusCode.includes(statusCode);
+  }
+
+  private getAuthToken(): string | undefined {
+    if (Utils.TypeUtils.isString(this.authToken)) {
+      return this.authToken as string;
+    }
+    if (Utils.TypeUtils.isFunction(this.authToken)) {
+      return (this.authToken as AuthTokenFunc)();
+    }
+    return undefined;
   }
 }
 
