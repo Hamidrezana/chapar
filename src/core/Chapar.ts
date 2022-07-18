@@ -13,6 +13,7 @@ import {
   AuthTokenFunc,
   AnyType,
   BaseUrlTypeExtractor,
+  MultipleBaseUrlType,
 } from '../types';
 import Utils from '../utils';
 
@@ -55,11 +56,11 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
     urlProps: string | CreateUrlArgs<BaseUrl>,
     baseUrlType?: BaseUrlTypeExtractor<BaseUrl>,
   ): string {
-    let finalBaseUrlType;
+    let finalBaseUrlType: BaseUrlType;
     if (typeof this.baseUrl === 'string') {
       finalBaseUrlType = this.baseUrl;
     } else if (baseUrlType) {
-      finalBaseUrlType = this.baseUrl?.[baseUrlType as string];
+      finalBaseUrlType = (this.baseUrl as MultipleBaseUrlType)?.[baseUrlType as string] as string;
     } else {
       finalBaseUrlType = Object.values(this.baseUrl || {})?.[0];
     }
@@ -123,7 +124,7 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
         data: dto ? dto(finalData) : (finalData as unknown as Result),
         message: response.data.message,
       };
-    } catch (err: AnyType) {
+    } catch (err) {
       const error = err as AxiosError<ChaparResponse<Response>>;
       this.onError?.(error);
       logger(err, {
