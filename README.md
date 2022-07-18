@@ -42,6 +42,6 @@ const response = await chapar.sendChapar('todos/1', { method: 'get' });
 ## Roadmap
 
 - [ ] Complete Documentation
-- [ ] Supporting multiple base urls
-- [ ] Supporting onError callback
+- [X] Supporting multiple base urls
+- [X] Supporting onError callback
 - [ ] Supporting response template

@@ -2,26 +2,16 @@
 
 export interface LoggerArgs {
   fileName?: string;
+  functionCall?: string;
   type?: 'ERROR' | 'LOG';
   description?: string;
 }
 
 export const logger = (
   message: string | unknown,
-  { fileName, description, type }: LoggerArgs = { type: 'ERROR' },
+  { fileName, functionCall, description, type }: LoggerArgs = { type: 'ERROR' },
 ): void => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(
-      `
-        \n
-        ----
-        fileName: ${fileName ?? '-'},
-        type: ${type ?? '-'},
-        description: ${description ?? '-'},
-        ----
-        \n
-        `,
-      message,
-    );
-  }
+  if (process.env.NODE_ENV !== 'development') return;
+  console.log('message: ', message || '-');
+  console.table({ fileName, functionCall, type, description });
 };
