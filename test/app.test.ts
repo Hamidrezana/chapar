@@ -7,7 +7,7 @@ describe('Chapar Tests', () => {
     });
 
     const response = await chapar.sendChapar('todos/1', {
-      urlProps: { baseUrlType: 'main' },
+      baseUrlType: 'main',
     });
     expect(response.success).toEqual(true);
   });
