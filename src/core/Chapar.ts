@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import Utils from '../utils';
 import { logger } from '../libs/Logger';
 import {
   ChaparResponse,
@@ -13,7 +11,10 @@ import {
   OnErrorCallbackType,
   AuthToken,
   AuthTokenFunc,
+  AnyType,
+  BaseUrlTypeExtractor,
 } from '../types';
+import Utils from '../utils';
 
 class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
   public baseUrl?: BaseUrl;
@@ -50,26 +51,43 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
     );
   }
 
-  createUrl({ url, queries = {}, args = [] }: CreateUrlArgs<BaseUrl>): string {
+  createUrl(
+    urlProps: string | CreateUrlArgs<BaseUrl>,
+    baseUrlType?: BaseUrlTypeExtractor<BaseUrl>,
+  ): string {
+    let finalBaseUrlType;
+    if (typeof this.baseUrl === 'string') {
+      finalBaseUrlType = this.baseUrl;
+    } else if (baseUrlType) {
+      finalBaseUrlType = this.baseUrl?.[baseUrlType as string];
+    } else {
+      finalBaseUrlType = Object.values(this.baseUrl || {})?.[0];
+    }
+
+    if (typeof urlProps === 'string') return `${finalBaseUrlType}/${urlProps}`;
+    const { url, queries = {}, args = [] } = urlProps;
     const basicUrl = [url, ...args].join('/');
-    const queriesParams = [];
-    for (let q in queries) {
-      if (Utils.TypeUtils.isNil(queries[q])) continue;
-      queriesParams.push(encodeURIComponent(q) + '=' + encodeURIComponent(queries[q]!));
-    }
+    const queriesParams: Array<string> = [];
+    Object.keys(queries || {}).forEach(q => {
+      if (!Utils.TypeUtils.isNil(queries[q])) {
+        queriesParams.push(`${encodeURIComponent(q)}=${encodeURIComponent(queries[q] as string)}`);
+      }
+    });
+
     if (queriesParams.length > 0) {
-      return `${basicUrl}?${queriesParams.join('&')}`;
+      return `${finalBaseUrlType || ''}/${basicUrl}?${queriesParams.join('&')}`;
     }
-    return basicUrl;
+    return `${finalBaseUrlType}/${basicUrl}`;
   }
 
-  async sendChapar<Result = any, Response = any, Body = Record<string, any>>(
+  async sendChapar<Result = AnyType, Response = AnyType, Body = Record<string, AnyType>>(
     url: string | CreateUrlArgs<BaseUrl>,
-    configs: SendChaparArgs<Body, Response, Result> = { method: 'get', headers: {} },
+    configs: SendChaparArgs<Body, Response, Result, BaseUrl> = { method: 'get', headers: {} },
   ): Promise<SendChaparReturnType<Result>> {
-    const { method, body, headers, setToken, dto } = configs;
+    const { method, body, headers, setToken, baseUrlType, dto } = configs;
+
     let response: AxiosResponse<ChaparResponse<Response>>;
-    const finalUrl = typeof url === 'string' ? url : this.createUrl(url);
+    const finalUrl = this.createUrl(url, baseUrlType);
     const finalHeaders = headers || {};
     if (setToken) {
       const token = this.getAuthToken();
@@ -101,10 +119,11 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
       const finalData: Response = response.data.data || (response.data as unknown as Response);
       return {
         success: isSuccess,
+        statusCode: response.status,
         data: dto ? dto(finalData) : (finalData as unknown as Result),
         message: response.data.message,
       };
-    } catch (err) {
+    } catch (err: AnyType) {
       const error = err as AxiosError<ChaparResponse<Response>>;
       this.onError?.(error);
       logger(err, {
@@ -113,6 +132,7 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
       });
       return {
         success: false,
+        statusCode: error.response?.status,
         data: null,
       };
     }
