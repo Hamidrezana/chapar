@@ -48,19 +48,25 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
         return response;
       },
       error => {
+        console.log(2, error.response.data);
         const statusCode = error?.response?.status;
+        const res: SendChaparReturnType = {
+          success: false,
+          data: null,
+          message: error?.response?.data?.message,
+        };
         switch (statusCode) {
           case 400:
-            on400Callback?.();
+            on400Callback?.(res);
             break;
           case 401:
-            on401Callback?.();
+            on401Callback?.(res);
             break;
           case 404:
-            on404Callback?.();
+            on404Callback?.(res);
             break;
           case 500:
-            on500Callback?.();
+            on500Callback?.(res);
             break;
         }
 
