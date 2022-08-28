@@ -37,14 +37,31 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
     });
   }
 
-  setupInterceptors({ on401Callback }: SetupInterceptorArgs) {
+  setupInterceptors({
+    on400Callback,
+    on401Callback,
+    on404Callback,
+    on500Callback,
+  }: SetupInterceptorArgs) {
     this.agent.interceptors.response.use(
       response => {
         return response;
       },
       error => {
-        if (error?.response?.status === 401) {
-          on401Callback?.();
+        const statusCode = error?.response?.status;
+        switch (statusCode) {
+          case 400:
+            on400Callback?.();
+            break;
+          case 401:
+            on401Callback?.();
+            break;
+          case 404:
+            on404Callback?.();
+            break;
+          case 500:
+            on500Callback?.();
+            break;
         }
 
         return Promise.reject(error);
