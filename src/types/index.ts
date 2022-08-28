@@ -37,10 +37,10 @@ export interface SetupAgentArgs {
 }
 
 export interface SetupInterceptorArgs {
-  on400Callback: $VoidFunc;
-  on401Callback: $VoidFunc;
-  on404Callback: $VoidFunc;
-  on500Callback: $VoidFunc;
+  on400Callback?: $VoidFunc;
+  on401Callback?: $VoidFunc;
+  on404Callback?: $VoidFunc;
+  on500Callback?: $VoidFunc;
 }
 
 export interface SendChaparArgs<
