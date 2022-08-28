@@ -48,7 +48,6 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
         return response;
       },
       error => {
-        console.log(2, error.response.data);
         const statusCode = error?.response?.status;
         const res: SendChaparReturnType = {
           success: false,
