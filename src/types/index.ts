@@ -46,7 +46,7 @@ export interface SendChaparArgs<
   Result = AnyType,
   BaseUrl = string,
 > {
-  method?: 'get' | 'post' | 'put' | 'delete';
+  method?: 'get' | 'post' | 'put' | 'delete' | 'patch';
   body?: Body;
   setToken?: boolean;
   headers?: Record<string, AnyType>;

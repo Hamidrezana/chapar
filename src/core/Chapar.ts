@@ -103,6 +103,7 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
       switch (method) {
         case 'post':
         case 'put':
+        case 'patch':
           response = await this.agent[method](finalUrl, body, config);
           break;
         case 'delete':
