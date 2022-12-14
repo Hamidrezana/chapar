@@ -37,7 +37,10 @@ export interface SetupAgentArgs {
 }
 
 export interface SetupInterceptorArgs {
-  on401Callback: $VoidFunc;
+  on400Callback?: (res: SendChaparReturnType) => void;
+  on401Callback?: (res: SendChaparReturnType) => void;
+  on404Callback?: (res: SendChaparReturnType) => void;
+  on500Callback?: (res: SendChaparReturnType) => void;
 }
 
 export interface SendChaparArgs<
