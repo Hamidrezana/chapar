@@ -14,27 +14,40 @@ import {
   AnyType,
   BaseUrlTypeExtractor,
   MultipleBaseUrlType,
+  MetaDataDtoFuncType,
 } from '../types';
 import Utils from '../utils';
 
-class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
+class Chapar<
+  BaseUrl extends BaseUrlType = BaseUrlType,
+  MetaDataResponse = AnyType,
+  MetaData = AnyType,
+> {
   public baseUrl?: BaseUrl;
   private agent: AxiosInstance;
+  public authToken?: AuthToken;
   private successStatusCode = [200, 201];
   public onError?: OnErrorCallbackType;
-  public authToken?: AuthToken;
+  public metaDataDto?: MetaDataDtoFuncType<MetaDataResponse, MetaData>;
 
-  constructor({ baseUrl, authToken, onError }: ChaparConstructorArgs<BaseUrl>) {
+  constructor({
+    baseUrl,
+    authToken,
+    timeout,
+    onError,
+    metaDataDto,
+  }: ChaparConstructorArgs<BaseUrl, MetaDataResponse, MetaData>) {
     this.baseUrl = baseUrl;
-    this.onError = onError;
     this.authToken = authToken;
     this.agent = axios.create({
       baseURL: Utils.TypeUtils.isString(baseUrl) ? (baseUrl as string) : undefined,
       headers: {
         'Content-Type': 'application/json',
       },
-      timeout: 10000 * 5,
+      timeout: (timeout || 5) * 1000,
     });
+    this.metaDataDto = metaDataDto;
+    this.onError = onError;
   }
 
   setupInterceptors({
@@ -42,16 +55,17 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
     on401Callback,
     on404Callback,
     on500Callback,
-  }: SetupInterceptorArgs) {
+  }: SetupInterceptorArgs<AnyType, AnyType>) {
     this.agent.interceptors.response.use(
       response => {
         return response;
       },
       error => {
         const statusCode = error?.response?.status;
-        const res: SendChaparReturnType = {
+        const res: SendChaparReturnType<AnyType, AnyType> = {
           success: false,
           data: null,
+          metaData: null,
           message: error?.response?.data?.message,
         };
         switch (statusCode) {
@@ -105,9 +119,12 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
 
   async sendChapar<Result = AnyType, Response = AnyType, Body = Record<string, AnyType>>(
     url: string | CreateUrlArgs<BaseUrl>,
-    configs: SendChaparArgs<Body, Response, Result, BaseUrl> = { method: 'get', headers: {} },
-  ): Promise<SendChaparReturnType<Result>> {
-    const { method, body, headers, setToken, baseUrlType, dto } = configs;
+    configs: SendChaparArgs<Body, Response, Result, BaseUrl>,
+  ): Promise<SendChaparReturnType<Result, MetaData>> {
+    const { method, body, headers, setToken, baseUrlType, dto } = {
+      ...{ method: 'get', headers: {} },
+      ...configs,
+    };
 
     let response: AxiosResponse<ChaparResponse<Response>>;
     const finalUrl = this.createUrl(url, baseUrlType);
@@ -146,6 +163,7 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
         statusCode: response.status,
         data: dto ? dto(finalData) : (finalData as unknown as Result),
         message: response.data.message,
+        metaData: this.metaDataDto?.(response.data.metaData) || null,
       };
     } catch (err) {
       const error = err as AxiosError<ChaparResponse<Response>>;
@@ -158,6 +176,7 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType> {
         success: false,
         statusCode: error.response?.status,
         data: null,
+        metaData: null,
       };
     }
   }
