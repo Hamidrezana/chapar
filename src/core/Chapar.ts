@@ -163,7 +163,10 @@ class Chapar<
         statusCode: response.status,
         data: dto ? dto(finalData) : (finalData as unknown as Result),
         message: response.data.message,
-        metaData: this.metaDataDto?.(response.data.metaData) || null,
+        metaData:
+          response.data.metaData && this.metaDataDto
+            ? this.metaDataDto?.(response.data.metaData)
+            : null,
       };
     } catch (err) {
       const error = err as AxiosError<ChaparResponse<Response>>;
