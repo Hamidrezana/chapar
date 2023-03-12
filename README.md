@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="images/full-logo.png" width="600px" height="auto" />
+</p>
+
 # Chapar
 
 ## About The Project
@@ -36,12 +40,11 @@ Then you can call APIs easily with `sendChapar` method
 
 ```js
 const response = await chapar.sendChapar('todos/1', { method: 'get' });
-
 ```
 
 ## Roadmap
 
 - [ ] Complete Documentation
-- [X] Supporting multiple base urls
-- [X] Supporting onError callback
+- [x] Supporting multiple base urls
+- [x] Supporting onError callback
 - [ ] Supporting response template
