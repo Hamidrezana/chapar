@@ -6,7 +6,7 @@
 
 ## About The Project
 
-**Call APIs easier than ever with**
+**Call APIs easier than ever with Chapar**
 
 ## Installation
 
