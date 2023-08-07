@@ -26,6 +26,7 @@ class Chapar<
   public baseUrl?: BaseUrl;
   private agent: AxiosInstance;
   public authToken?: AuthToken;
+  private authorizationKey: string;
   private successStatusCode = [200, 201];
   public onError?: OnErrorCallbackType;
   public metaDataDto?: MetaDataDtoFuncType<MetaDataResponse, MetaData>;
@@ -33,12 +34,14 @@ class Chapar<
   constructor({
     baseUrl,
     authToken,
+    authorizationKey,
     timeout,
     onError,
     metaDataDto,
   }: ChaparConstructorArgs<BaseUrl, MetaDataResponse, MetaData>) {
     this.baseUrl = baseUrl;
     this.authToken = authToken;
+    this.authorizationKey = authorizationKey || 'Authorization';
     this.agent = axios.create({
       baseURL: Utils.TypeUtils.isString(baseUrl) ? (baseUrl as string) : undefined,
       headers: {
@@ -132,7 +135,7 @@ class Chapar<
     if (setToken) {
       const token = this.getAuthToken();
       if (token) {
-        finalHeaders.Authorization = token;
+        finalHeaders[this.authorizationKey] = token;
       }
     }
     try {

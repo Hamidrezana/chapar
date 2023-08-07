@@ -25,6 +25,7 @@ export interface ChaparConstructorArgs<BaseUrl, MetaDataResponse = AnyType, Meta
   baseUrl?: BaseUrl;
   authToken?: AuthToken;
   timeout?: number;
+  authorizationKey?: string;
   onError?: OnErrorCallbackType;
   metaDataDto?: MetaDataDtoFuncType<MetaDataResponse, MetaData>;
 }
