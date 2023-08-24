@@ -3,17 +3,16 @@ import { AxiosError } from 'axios';
 export type QueryType = Record<string, string | number | null | undefined>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AnyType = any;
-export interface ChaparResponse<Data = AnyType, MetaData = AnyType> {
+export interface ChaparResponse<Data = AnyType> {
   success: boolean;
   data: Data;
-  metaData?: MetaData;
   message?: string;
 }
 
 export type MultipleBaseUrlType = Record<string, string>;
 export type BaseUrlType = string | MultipleBaseUrlType;
 export type OnErrorCallbackType = <Data>(err: AxiosError<ChaparResponse<Data>>) => void;
-export type MetaDataDtoFuncType<Data = AnyType, Return = AnyType> = (data: Data) => Return;
+export type CheckStatusFuncType<Response> = (statusCode: number, response: Response) => boolean;
 export type BaseUrlTypeExtractor<BaseUrl> = Extract<
   BaseUrl,
   MultipleBaseUrlType | undefined
@@ -21,13 +20,16 @@ export type BaseUrlTypeExtractor<BaseUrl> = Extract<
   ? BaseUrl
   : keyof BaseUrl;
 
-export interface ChaparConstructorArgs<BaseUrl, MetaDataResponse = AnyType, MetaData = AnyType> {
+export interface ChaparConstructorArgs<BaseUrl, Response = ChaparResponse<AnyType>> {
   baseUrl?: BaseUrl;
   authToken?: AuthToken;
   timeout?: number;
   authorizationKey?: string;
+  successKey?: keyof Response;
+  dataKey?: keyof Response;
+  messageKey?: keyof Response;
   onError?: OnErrorCallbackType;
-  metaDataDto?: MetaDataDtoFuncType<MetaDataResponse, MetaData>;
+  checkStatusFunc?: CheckStatusFuncType<Response>;
 }
 
 export interface CreateUrlArgs<BaseUrl = string> {
@@ -41,11 +43,11 @@ export interface SetupAgentArgs {
   baseUrl: string;
 }
 
-export interface SetupInterceptorArgs<Data, MetaData> {
-  on400Callback?: (res: SendChaparReturnType<Data, MetaData>) => void;
-  on401Callback?: (res: SendChaparReturnType<Data, MetaData>) => void;
-  on404Callback?: (res: SendChaparReturnType<Data, MetaData>) => void;
-  on500Callback?: (res: SendChaparReturnType<Data, MetaData>) => void;
+export interface SetupInterceptorArgs<Data> {
+  on400Callback?: (res: SendChaparReturnType<Data>) => void;
+  on401Callback?: (res: SendChaparReturnType<Data>) => void;
+  on404Callback?: (res: SendChaparReturnType<Data>) => void;
+  on500Callback?: (res: SendChaparReturnType<Data>) => void;
 }
 
 export interface SendChaparArgs<
@@ -62,14 +64,13 @@ export interface SendChaparArgs<
   dto?: (payload: Response) => $NullType<Result>;
 }
 
-export interface SendChaparReturnType<Data, MetaData> {
+export interface SendChaparReturnType<Data> {
   success: boolean;
   statusCode?: number;
   data: $NullType<Data>;
-  metaData: $NullType<MetaData>;
   message?: string;
 }
 
-export type ChaparFunc<Data, MetaData> = Promise<SendChaparReturnType<Data, MetaData>>;
+export type ChaparFunc<Data> = Promise<SendChaparReturnType<Data>>;
 export type AuthTokenFunc = () => string;
 export type AuthToken = string | AuthTokenFunc;
