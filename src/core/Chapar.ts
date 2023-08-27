@@ -14,34 +14,39 @@ import {
   AnyType,
   BaseUrlTypeExtractor,
   MultipleBaseUrlType,
-  MetaDataDtoFuncType,
+  CheckStatusFuncType,
 } from '../types';
 import Utils from '../utils';
 
-class Chapar<
-  BaseUrl extends BaseUrlType = BaseUrlType,
-  MetaDataResponse = AnyType,
-  MetaData = AnyType,
-> {
+class Chapar<BaseUrl extends BaseUrlType = BaseUrlType, Response = ChaparResponse> {
   public baseUrl?: BaseUrl;
   private agent: AxiosInstance;
   public authToken?: AuthToken;
   private authorizationKey: string;
+  private successKey: keyof Response;
+  private messageKey: keyof Response;
+  private dataKey: keyof Response;
   private successStatusCode = [200, 201];
   public onError?: OnErrorCallbackType;
-  public metaDataDto?: MetaDataDtoFuncType<MetaDataResponse, MetaData>;
+  public checkStatusFuncType?: CheckStatusFuncType<Response>;
 
   constructor({
     baseUrl,
     authToken,
     authorizationKey,
+    dataKey,
+    messageKey,
+    successKey,
     timeout,
     onError,
-    metaDataDto,
-  }: ChaparConstructorArgs<BaseUrl, MetaDataResponse, MetaData>) {
+    checkStatusFunc,
+  }: ChaparConstructorArgs<BaseUrl, Response>) {
     this.baseUrl = baseUrl;
     this.authToken = authToken;
     this.authorizationKey = authorizationKey || 'Authorization';
+    this.messageKey = messageKey || ('message' as keyof Response);
+    this.dataKey = dataKey || ('data' as keyof Response);
+    this.successKey = successKey || ('success' as keyof Response);
     this.agent = axios.create({
       baseURL: Utils.TypeUtils.isString(baseUrl) ? (baseUrl as string) : undefined,
       headers: {
@@ -49,8 +54,8 @@ class Chapar<
       },
       timeout: (timeout || 5) * 1000,
     });
-    this.metaDataDto = metaDataDto;
     this.onError = onError;
+    this.checkStatusFuncType = checkStatusFunc;
   }
 
   setupInterceptors({
@@ -58,17 +63,16 @@ class Chapar<
     on401Callback,
     on404Callback,
     on500Callback,
-  }: SetupInterceptorArgs<AnyType, AnyType>) {
+  }: SetupInterceptorArgs<AnyType>) {
     this.agent.interceptors.response.use(
       response => {
         return response;
       },
       error => {
         const statusCode = error?.response?.status;
-        const res: SendChaparReturnType<AnyType, AnyType> = {
+        const res: SendChaparReturnType<AnyType> = {
           success: false,
           data: null,
-          metaData: null,
           message: error?.response?.data?.message,
         };
         switch (statusCode) {
@@ -120,16 +124,16 @@ class Chapar<
     return `${finalBaseUrlType}/${basicUrl}`;
   }
 
-  async sendChapar<Result = AnyType, Response = AnyType, Body = Record<string, AnyType>>(
+  async sendChapar<Result = AnyType, ApiResponse = AnyType, Body = Record<string, AnyType>>(
     url: string | CreateUrlArgs<BaseUrl>,
-    configs: SendChaparArgs<Body, Response, Result, BaseUrl>,
-  ): Promise<SendChaparReturnType<Result, MetaData>> {
+    configs: SendChaparArgs<Body, ApiResponse, Result, BaseUrl>,
+  ): Promise<SendChaparReturnType<Result>> {
     const { method, body, headers, setToken, baseUrlType, dto } = {
       ...{ method: 'get', headers: {} },
       ...configs,
     };
 
-    let response: AxiosResponse<ChaparResponse<Response>>;
+    let response: AxiosResponse<Response>;
     const finalUrl = this.createUrl(url, baseUrlType);
     const finalHeaders = headers || {};
     if (setToken) {
@@ -159,20 +163,18 @@ class Chapar<
           response = await this.agent.get(finalUrl, config);
           break;
       }
-      const isSuccess = !!(this.isSuccessStatus(response.status) || response.data.success);
-      const finalData: Response = response.data.data || (response.data as unknown as Response);
+      const isSuccess = this.isSuccess(response.status, response.data);
+      const finalData: ApiResponse =
+        (response.data[this.dataKey] as unknown as ApiResponse) ||
+        (response.data as unknown as ApiResponse);
       return {
         success: isSuccess,
         statusCode: response.status,
         data: dto ? dto(finalData) : (finalData as unknown as Result),
-        message: response.data.message,
-        metaData:
-          response.data.metaData && this.metaDataDto
-            ? this.metaDataDto?.(response.data.metaData)
-            : null,
+        message: response.data[this.messageKey] as unknown as string,
       };
     } catch (err) {
-      const error = err as AxiosError<ChaparResponse<Response>>;
+      const error = err as AxiosError<ChaparResponse<ApiResponse>>;
       this.onError?.(error);
       logger(err, {
         fileName: 'Request Error',
@@ -182,13 +184,15 @@ class Chapar<
         success: false,
         statusCode: error.response?.status,
         data: null,
-        metaData: null,
       };
     }
   }
 
-  private isSuccessStatus(statusCode: number) {
-    return this.successStatusCode.includes(statusCode);
+  private isSuccess(statusCode: number, response: Response) {
+    if (this.checkStatusFuncType && Utils.TypeUtils.isFunction(this.checkStatusFuncType)) {
+      return this.checkStatusFuncType(statusCode, response);
+    }
+    return !!(this.successStatusCode.includes(statusCode) || response[this.successKey]);
   }
 
   private getAuthToken(): string | undefined {

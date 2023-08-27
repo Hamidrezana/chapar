@@ -14,4 +14,15 @@ describe('Chapar Tests', () => {
     });
     expect(response.success).toEqual(true);
   });
+  it('Add Response Template', async () => {
+    const chapar = new Chapar<string, { status: number; data: unknown }>({
+      baseUrl: 'https://publicapi.ramzinex.com/exchange/api/v1.0/exchange',
+      successKey: 'status',
+      dataKey: 'data',
+      checkStatusFunc: (_statusCode, response) => response.status === 0,
+    });
+
+    const response = await chapar.sendChapar('pairs', { method: 'get' });
+    expect(response.success).toEqual(true);
+  });
 });
