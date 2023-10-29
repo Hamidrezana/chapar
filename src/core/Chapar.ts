@@ -73,7 +73,7 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType, Response = ChaparRespons
         const res: SendChaparReturnType<AnyType> = {
           success: false,
           data: null,
-          message: error?.response?.data?.message,
+          message: error?.response?.data?.[this.messageKey],
         };
         switch (statusCode) {
           case 400:
