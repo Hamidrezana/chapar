@@ -13,6 +13,7 @@ export type MultipleBaseUrlType = Record<string, string>;
 export type BaseUrlType = string | MultipleBaseUrlType;
 export type OnErrorCallbackType = <Data>(err: AxiosError<ChaparResponse<Data>>) => void;
 export type CheckStatusFuncType<Response> = (statusCode: number, response: Response) => boolean;
+export type MetaDataFnType<Response, MData> = (response: Response) => MData;
 export type BaseUrlTypeExtractor<BaseUrl> = Extract<
   BaseUrl,
   MultipleBaseUrlType | undefined
@@ -20,16 +21,22 @@ export type BaseUrlTypeExtractor<BaseUrl> = Extract<
   ? BaseUrl
   : keyof BaseUrl;
 
-export interface ChaparConstructorArgs<BaseUrl, Response = ChaparResponse<AnyType>> {
+export interface ChaparConstructorArgs<
+  BaseUrl,
+  Response = ChaparResponse<AnyType>,
+  MData = AnyType,
+> {
   baseUrl?: BaseUrl;
   authToken?: AuthToken;
   timeout?: number;
   authorizationKey?: string;
+  throwError?: boolean;
   successKey?: keyof Response;
   dataKey?: keyof Response;
   messageKey?: keyof Response;
   onError?: OnErrorCallbackType;
   checkStatusFunc?: CheckStatusFuncType<Response>;
+  metaDataFn?: MetaDataFnType<Response, MData>;
 }
 
 export interface CreateUrlArgs<BaseUrl = string> {
@@ -55,22 +62,25 @@ export interface SendChaparArgs<
   Response = AnyType,
   Result = AnyType,
   BaseUrl = string,
+  MData = AnyType,
 > {
   method?: 'get' | 'post' | 'put' | 'delete' | 'patch';
   body?: Body;
   setToken?: boolean;
   headers?: Record<string, AnyType>;
   baseUrlType?: BaseUrlTypeExtractor<BaseUrl>;
-  dto?: (payload: Response) => $NullType<Result>;
+  throwError?: boolean;
+  dto?: (payload: Response, metaData?: MData) => $NullType<Result>;
 }
 
-export interface SendChaparReturnType<Data> {
+export interface SendChaparReturnType<Data, MData = AnyType> {
   success: boolean;
   statusCode?: number;
   data: $NullType<Data>;
+  metaData: $NullType<MData>;
   message?: string;
 }
 
-export type ChaparFunc<Data> = Promise<SendChaparReturnType<Data>>;
+export type ChaparFunc<Data, MData> = Promise<SendChaparReturnType<Data, MData>>;
 export type AuthTokenFunc = () => string;
 export type AuthToken = string | AuthTokenFunc;
