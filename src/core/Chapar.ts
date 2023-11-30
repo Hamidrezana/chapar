@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { logger } from '../libs/Logger';
+import ChaparError from '../models/ChaparError';
 import {
   ChaparResponse,
   BaseUrlType,
@@ -15,10 +16,15 @@ import {
   BaseUrlTypeExtractor,
   MultipleBaseUrlType,
   CheckStatusFuncType,
+  MetaDataFnType,
 } from '../types';
 import Utils from '../utils';
 
-class Chapar<BaseUrl extends BaseUrlType = BaseUrlType, Response = ChaparResponse> {
+class Chapar<
+  BaseUrl extends BaseUrlType = BaseUrlType,
+  Response = ChaparResponse,
+  MData = AnyType,
+> {
   public baseUrl?: BaseUrl;
   private agent: AxiosInstance;
   public authToken?: AuthToken;
@@ -26,9 +32,11 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType, Response = ChaparRespons
   private successKey: keyof Response;
   private messageKey: keyof Response;
   private dataKey: keyof Response;
+  private throwError: boolean;
   private successStatusCode = [200, 201];
   public onError?: OnErrorCallbackType;
   public checkStatusFuncType?: CheckStatusFuncType<Response>;
+  public metaDataFn?: MetaDataFnType<Response, MData>;
 
   constructor({
     baseUrl,
@@ -38,9 +46,11 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType, Response = ChaparRespons
     messageKey,
     successKey,
     timeout,
+    throwError,
     onError,
     checkStatusFunc,
-  }: ChaparConstructorArgs<BaseUrl, Response>) {
+    metaDataFn,
+  }: ChaparConstructorArgs<BaseUrl, Response, MData>) {
     this.baseUrl = baseUrl;
     this.authToken = authToken;
     this.authorizationKey = authorizationKey || 'Authorization';
@@ -54,8 +64,10 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType, Response = ChaparRespons
       },
       timeout: (timeout || 5) * 1000,
     });
+    this.throwError = !!throwError;
     this.onError = onError;
     this.checkStatusFuncType = checkStatusFunc;
+    this.metaDataFn = metaDataFn;
   }
 
   setupInterceptors({
@@ -73,6 +85,7 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType, Response = ChaparRespons
         const res: SendChaparReturnType<AnyType> = {
           success: false,
           data: null,
+          metaData: null,
           message: error?.response?.data?.[this.messageKey],
         };
         switch (statusCode) {
@@ -127,8 +140,8 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType, Response = ChaparRespons
   async sendChapar<Result = AnyType, ApiResponse = AnyType, Body = Record<string, AnyType>>(
     url: string | CreateUrlArgs<BaseUrl>,
     configs: SendChaparArgs<Body, ApiResponse, Result, BaseUrl>,
-  ): Promise<SendChaparReturnType<Result>> {
-    const { method, body, headers, setToken, baseUrlType, dto, onUploadProgress } = {
+  ): Promise<SendChaparReturnType<Result, MData>> {
+    const { method, body, headers, setToken, baseUrlType, throwError, onUploadProgress, dto } = {
       ...{ method: 'get', headers: {} },
       ...configs,
     };
@@ -168,10 +181,13 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType, Response = ChaparRespons
       const finalData: ApiResponse =
         (response.data[this.dataKey] as unknown as ApiResponse) ||
         (response.data as unknown as ApiResponse);
+
+      const metaData = this.metaDataFn?.(response.data);
       return {
         success: isSuccess,
         statusCode: response.status,
-        data: dto ? dto(finalData) : (finalData as unknown as Result),
+        data: dto ? dto(finalData, metaData) : (finalData as unknown as Result),
+        metaData: metaData || null,
         message: response.data[this.messageKey] as unknown as string,
       };
     } catch (err) {
@@ -181,10 +197,17 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType, Response = ChaparRespons
         fileName: 'Request Error',
         description: JSON.stringify(error?.config),
       });
+      if (this.shouldThrowError(throwError)) {
+        throw new ChaparError({
+          message: error.response?.data.message,
+          statusCode: error.response?.status,
+        });
+      }
       return {
         success: false,
         statusCode: error.response?.status,
         data: null,
+        metaData: null,
       };
     }
   }
@@ -204,6 +227,10 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType, Response = ChaparRespons
       return (this.authToken as AuthTokenFunc)();
     }
     return undefined;
+  }
+
+  private shouldThrowError(th?: boolean) {
+    return !!th || !!this.throwError;
   }
 }
 
