@@ -71,6 +71,7 @@ export interface SendChaparArgs<
   baseUrlType?: BaseUrlTypeExtractor<BaseUrl>;
   throwError?: boolean;
   dto?: (payload: Response, metaData?: MData) => $NullType<Result>;
+  onUploadProgress?: (data: Response) => void;
 }
 
 export interface SendChaparReturnType<Data, MData = AnyType> {
