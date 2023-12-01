@@ -128,7 +128,7 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType, Response = ChaparRespons
     url: string | CreateUrlArgs<BaseUrl>,
     configs: SendChaparArgs<Body, ApiResponse, Result, BaseUrl>,
   ): Promise<SendChaparReturnType<Result>> {
-    const { method, body, headers, setToken, baseUrlType, dto } = {
+    const { method, body, headers, setToken, baseUrlType, dto, onUploadProgress } = {
       ...{ method: 'get', headers: {} },
       ...configs,
     };
@@ -145,6 +145,7 @@ class Chapar<BaseUrl extends BaseUrlType = BaseUrlType, Response = ChaparRespons
     try {
       const config: AxiosRequestConfig = {
         headers: finalHeaders,
+        onUploadProgress,
       };
       switch (method) {
         case 'post':
