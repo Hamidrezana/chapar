@@ -145,7 +145,17 @@ class Chapar<
     url: string | CreateUrlArgs<BaseUrl>,
     configs: SendChaparArgs<Body, ApiResponse, Result, BaseUrl>,
   ): Promise<SendChaparReturnType<Result, MData>> {
-    const { method, body, headers, setToken, baseUrlType, throwError, onUploadProgress, dto } = {
+    const {
+      method,
+      body,
+      headers,
+      setToken,
+      baseUrlType,
+      throwError,
+      callOnUnsuccess,
+      onUploadProgress,
+      dto,
+    } = {
       ...{ method: 'get', headers: {} },
       ...configs,
     };
@@ -182,7 +192,7 @@ class Chapar<
           break;
       }
       const isSuccess = this.isSuccess(response.status, response.data);
-      if (!isSuccess) {
+      if (!isSuccess && callOnUnsuccess) {
         this.onUnsuccess?.(response.data);
       }
       const finalData: ApiResponse =
