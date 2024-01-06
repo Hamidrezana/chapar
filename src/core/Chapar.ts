@@ -17,6 +17,7 @@ import {
   MultipleBaseUrlType,
   CheckStatusFuncType,
   MetaDataFnType,
+  OnUnsuccessCallbackType,
 } from '../types';
 import Utils from '../utils';
 
@@ -37,6 +38,7 @@ class Chapar<
   public onError?: OnErrorCallbackType;
   public checkStatusFuncType?: CheckStatusFuncType<Response>;
   public metaDataFn?: MetaDataFnType<Response, MData>;
+  public onUnsuccess?: OnUnsuccessCallbackType<Response>;
 
   constructor({
     baseUrl,
@@ -50,6 +52,7 @@ class Chapar<
     onError,
     checkStatusFunc,
     metaDataFn,
+    onUnsuccess,
   }: ChaparConstructorArgs<BaseUrl, Response, MData>) {
     this.baseUrl = baseUrl;
     this.authToken = authToken;
@@ -68,6 +71,7 @@ class Chapar<
     this.onError = onError;
     this.checkStatusFuncType = checkStatusFunc;
     this.metaDataFn = metaDataFn;
+    this.onUnsuccess = onUnsuccess;
   }
 
   setupInterceptors({
@@ -178,6 +182,9 @@ class Chapar<
           break;
       }
       const isSuccess = this.isSuccess(response.status, response.data);
+      if (!isSuccess) {
+        this.onUnsuccess?.(response.data);
+      }
       const finalData: ApiResponse =
         (response.data[this.dataKey] as unknown as ApiResponse) ||
         (response.data as unknown as ApiResponse);
