@@ -39,6 +39,8 @@ class Chapar<
   public checkStatusFuncType?: CheckStatusFuncType<Response>;
   public metaDataFn?: MetaDataFnType<Response, MData>;
   public onUnsuccess?: OnUnsuccessCallbackType<Response>;
+  public beforeRequest?: VoidFunction;
+  public afterRequest?: VoidFunction;
 
   constructor({
     baseUrl,
@@ -53,6 +55,8 @@ class Chapar<
     checkStatusFunc,
     metaDataFn,
     onUnsuccess,
+    beforeRequest,
+    afterRequest,
   }: ChaparConstructorArgs<BaseUrl, Response, MData>) {
     this.baseUrl = baseUrl;
     this.authToken = authToken;
@@ -72,6 +76,8 @@ class Chapar<
     this.checkStatusFuncType = checkStatusFunc;
     this.metaDataFn = metaDataFn;
     this.onUnsuccess = onUnsuccess;
+    this.beforeRequest = beforeRequest;
+    this.afterRequest = afterRequest;
   }
 
   setupInterceptors({
@@ -153,6 +159,7 @@ class Chapar<
       baseUrlType,
       throwError,
       callOnUnsuccess,
+      callTimingFn,
       onUploadProgress,
       dto,
     } = {
@@ -174,6 +181,9 @@ class Chapar<
         headers: finalHeaders,
         onUploadProgress,
       };
+      if (callTimingFn) {
+        this.beforeRequest?.();
+      }
       switch (method) {
         case 'post':
         case 'put':
@@ -226,6 +236,10 @@ class Chapar<
         data: null,
         metaData: null,
       };
+    } finally {
+      if (callTimingFn) {
+        this.afterRequest?.();
+      }
     }
   }
 

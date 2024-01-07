@@ -39,6 +39,8 @@ export interface ChaparConstructorArgs<
   checkStatusFunc?: CheckStatusFuncType<Response>;
   metaDataFn?: MetaDataFnType<Response, MData>;
   onUnsuccess?: OnUnsuccessCallbackType<Response>;
+  beforeRequest?: VoidFunction;
+  afterRequest?: VoidFunction;
 }
 
 export interface CreateUrlArgs<BaseUrl = string> {
@@ -73,6 +75,7 @@ export interface SendChaparArgs<
   baseUrlType?: BaseUrlTypeExtractor<BaseUrl>;
   throwError?: boolean;
   callOnUnsuccess?: boolean;
+  callTimingFn?: boolean;
   dto?: (payload: Response, metaData?: MData) => $NullType<Result>;
   onUploadProgress?: (data: Response) => void;
 }
