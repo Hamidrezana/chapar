@@ -7,6 +7,7 @@
     }
   },
   "compilerOptions": {
+    "moduleResolution":"node",
     "module": "esnext",
     "rootDir": "./src"
   }
