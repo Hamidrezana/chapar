@@ -1,5 +1,5 @@
-import { ITodo } from '../../../../models/Todo';
-import { TodoResponseType } from '../types';
+import { ITodo } from '../../../models/Todo';
+import { TodoResponseType } from './types';
 
 export const todoTransformer = (response: TodoResponseType): ITodo => {
   return {
