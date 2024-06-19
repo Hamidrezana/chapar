@@ -75,7 +75,7 @@ export interface SendChaparArgs<
   headers?: Record<string, AnyType>;
   baseUrlType?: BaseUrlTypeExtractor<BaseUrl>;
   throwError?: boolean;
-  callonFail?: boolean;
+  callOnFail?: boolean;
   callTimingFn?: boolean;
   dto?: (payload: Response, metaData?: MData) => $NullType<Result>;
   onUploadProgress?: (data: Response) => void;

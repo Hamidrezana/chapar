@@ -162,7 +162,7 @@ class Chapar<
       setToken,
       baseUrlType,
       throwError,
-      callonFail,
+      callOnFail,
       callTimingFn,
       onUploadProgress,
       dto,
@@ -206,7 +206,7 @@ class Chapar<
           break;
       }
       const isSuccess = this.isSuccess(response.status, response.data);
-      if (!isSuccess && callonFail) {
+      if (!isSuccess && callOnFail) {
         this.onFail?.(response.data);
       }
       const finalData: ApiResponse =
