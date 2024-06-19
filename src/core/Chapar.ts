@@ -17,7 +17,7 @@ import {
   MultipleBaseUrlType,
   CheckStatusFuncType,
   MetaDataFnType,
-  onFailCallbackType,
+  OnFailCallbackType,
 } from '../types';
 import Utils from '../utils';
 
@@ -38,7 +38,7 @@ class Chapar<
   public onError?: OnErrorCallbackType;
   public checkStatusFuncType?: CheckStatusFuncType<Response>;
   public metaDataFn?: MetaDataFnType<Response, MData>;
-  public onFail?: onFailCallbackType<Response>;
+  public onFail?: OnFailCallbackType<Response>;
   public beforeRequest?: VoidFunction;
   public afterRequest?: VoidFunction;
 
