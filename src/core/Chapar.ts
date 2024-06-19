@@ -17,7 +17,7 @@ import {
   MultipleBaseUrlType,
   CheckStatusFuncType,
   MetaDataFnType,
-  OnUnsuccessCallbackType,
+  onFailCallbackType,
 } from '../types';
 import Utils from '../utils';
 
@@ -38,7 +38,7 @@ class Chapar<
   public onError?: OnErrorCallbackType;
   public checkStatusFuncType?: CheckStatusFuncType<Response>;
   public metaDataFn?: MetaDataFnType<Response, MData>;
-  public onUnsuccess?: OnUnsuccessCallbackType<Response>;
+  public onFail?: onFailCallbackType<Response>;
   public beforeRequest?: VoidFunction;
   public afterRequest?: VoidFunction;
 
@@ -54,7 +54,7 @@ class Chapar<
     onError,
     checkStatusFunc,
     metaDataFn,
-    onUnsuccess,
+    onFail,
     beforeRequest,
     afterRequest,
   }: ChaparConstructorArgs<BaseUrl, Response, MData>) {
@@ -75,7 +75,7 @@ class Chapar<
     this.onError = onError;
     this.checkStatusFuncType = checkStatusFunc;
     this.metaDataFn = metaDataFn;
-    this.onUnsuccess = onUnsuccess;
+    this.onFail = onFail;
     this.beforeRequest = beforeRequest;
     this.afterRequest = afterRequest;
   }
@@ -162,7 +162,7 @@ class Chapar<
       setToken,
       baseUrlType,
       throwError,
-      callOnUnsuccess,
+      callonFail,
       callTimingFn,
       onUploadProgress,
       dto,
@@ -206,8 +206,8 @@ class Chapar<
           break;
       }
       const isSuccess = this.isSuccess(response.status, response.data);
-      if (!isSuccess && callOnUnsuccess) {
-        this.onUnsuccess?.(response.data);
+      if (!isSuccess && callonFail) {
+        this.onFail?.(response.data);
       }
       const finalData: ApiResponse =
         (response.data[this.dataKey] as unknown as ApiResponse) ||
