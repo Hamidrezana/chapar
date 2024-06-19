@@ -57,6 +57,7 @@ export interface SetupAgentArgs {
 export interface SetupInterceptorArgs<Data> {
   on400Callback?: (res: SendChaparReturnType<Data>) => void;
   on401Callback?: (res: SendChaparReturnType<Data>) => void;
+  on403Callback?: (res: SendChaparReturnType<Data>) => void;
   on404Callback?: (res: SendChaparReturnType<Data>) => void;
   on500Callback?: (res: SendChaparReturnType<Data>) => void;
 }

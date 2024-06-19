@@ -83,6 +83,7 @@ class Chapar<
   setupInterceptors({
     on400Callback,
     on401Callback,
+    on403Callback,
     on404Callback,
     on500Callback,
   }: SetupInterceptorArgs<AnyType>) {
@@ -104,6 +105,9 @@ class Chapar<
             break;
           case 401:
             on401Callback?.(res);
+            break;
+          case 403:
+            on403Callback?.(res);
             break;
           case 404:
             on404Callback?.(res);
