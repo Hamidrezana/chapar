@@ -12,7 +12,7 @@ export interface ChaparResponse<Data = AnyType> {
 export type MultipleBaseUrlType = Record<string, string>;
 export type BaseUrlType = string | MultipleBaseUrlType;
 export type OnErrorCallbackType = <Data>(err: AxiosError<ChaparResponse<Data>>) => void;
-export type OnFailCallbackType<Response> = (response: Response) => void;
+export type OnFailCallbackType<Response> = (response: Response, extraData?: QueryType) => void;
 export type CheckStatusFuncType<Response> = (statusCode: number, response: Response) => boolean;
 export type MetaDataFnType<Response, MData> = (response: Response) => MData;
 export type BaseUrlTypeExtractor<BaseUrl> = Extract<
