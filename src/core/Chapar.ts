@@ -18,7 +18,6 @@ import {
   CheckStatusFuncType,
   MetaDataFnType,
   OnFailCallbackType,
-  QueryType,
 } from '../types';
 import Utils from '../utils';
 
@@ -155,7 +154,7 @@ class Chapar<
   async sendChapar<Result = AnyType, ApiResponse = AnyType, Body = Record<string, AnyType>>(
     url: string | CreateUrlArgs<BaseUrl>,
     configs: SendChaparArgs<Body, ApiResponse, Result, BaseUrl>,
-    extraData: QueryType,
+    extraData?: AnyType,
   ): Promise<SendChaparReturnType<Result, MData>> {
     const {
       method,
