@@ -11,7 +11,10 @@ export interface ChaparResponse<Data = AnyType> {
 
 export type MultipleBaseUrlType = Record<string, string>;
 export type BaseUrlType = string | MultipleBaseUrlType;
-export type OnErrorCallbackType = <Data>(err: AxiosError<ChaparResponse<Data>>) => void;
+export type OnErrorCallbackType = <Data>(
+  err: AxiosError<ChaparResponse<Data>>,
+  extraData?: AnyType,
+) => void;
 export type OnFailCallbackType<Response> = (response: Response, extraData?: AnyType) => void;
 export type CheckStatusFuncType<Response> = (statusCode: number, response: Response) => boolean;
 export type MetaDataFnType<Response, MData> = (response: Response) => MData;
@@ -21,6 +24,10 @@ export type BaseUrlTypeExtractor<BaseUrl> = Extract<
 > extends never
   ? BaseUrl
   : keyof BaseUrl;
+
+export interface DefaultConfigs {
+  callOnFail: boolean;
+}
 
 export interface ChaparConstructorArgs<
   BaseUrl,
@@ -35,6 +42,7 @@ export interface ChaparConstructorArgs<
   successKey?: keyof Response;
   dataKey?: keyof Response;
   messageKey?: keyof Response;
+  defaultConfigs?: Partial<DefaultConfigs>;
   onError?: OnErrorCallbackType;
   checkStatusFunc?: CheckStatusFuncType<Response>;
   metaDataFn?: MetaDataFnType<Response, MData>;

@@ -18,6 +18,7 @@ import {
   CheckStatusFuncType,
   MetaDataFnType,
   OnFailCallbackType,
+  DefaultConfigs,
 } from '../types';
 import Utils from '../utils';
 
@@ -34,6 +35,7 @@ class Chapar<
   private messageKey: keyof Response;
   private dataKey: keyof Response;
   private throwError: boolean;
+  private defaultConfigs?: Partial<DefaultConfigs>;
   private successStatusCode = [200, 201];
   public onError?: OnErrorCallbackType;
   public checkStatusFuncType?: CheckStatusFuncType<Response>;
@@ -51,6 +53,7 @@ class Chapar<
     successKey,
     timeout,
     throwError,
+    defaultConfigs,
     onError,
     checkStatusFunc,
     metaDataFn,
@@ -72,6 +75,7 @@ class Chapar<
       timeout: (timeout || 5) * 1000,
     });
     this.throwError = !!throwError;
+    this.defaultConfigs = defaultConfigs;
     this.onError = onError;
     this.checkStatusFuncType = checkStatusFunc;
     this.metaDataFn = metaDataFn;
@@ -207,7 +211,11 @@ class Chapar<
           break;
       }
       const isSuccess = this.isSuccess(response.status, response.data);
-      if (!isSuccess && callOnFail) {
+      console.log(
+        44,
+        !isSuccess && ((this.defaultConfigs?.callOnFail && callOnFail !== false) || callOnFail),
+      );
+      if (!isSuccess && ((this.defaultConfigs?.callOnFail && callOnFail !== false) || callOnFail)) {
         this.onFail?.(response.data, extraData);
       }
       const finalData: ApiResponse =
@@ -224,7 +232,7 @@ class Chapar<
       };
     } catch (err) {
       const error = err as AxiosError<ChaparResponse<ApiResponse>>;
-      this.onError?.(error);
+      this.onError?.(error, extraData);
       logger(err, {
         fileName: 'Request Error',
         description: JSON.stringify(error?.config),
