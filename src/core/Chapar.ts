@@ -18,6 +18,7 @@ import {
   CheckStatusFuncType,
   MetaDataFnType,
   OnFailCallbackType,
+  QueryType,
 } from '../types';
 import Utils from '../utils';
 
@@ -154,6 +155,7 @@ class Chapar<
   async sendChapar<Result = AnyType, ApiResponse = AnyType, Body = Record<string, AnyType>>(
     url: string | CreateUrlArgs<BaseUrl>,
     configs: SendChaparArgs<Body, ApiResponse, Result, BaseUrl>,
+    extraData: QueryType,
   ): Promise<SendChaparReturnType<Result, MData>> {
     const {
       method,
@@ -207,7 +209,7 @@ class Chapar<
       }
       const isSuccess = this.isSuccess(response.status, response.data);
       if (!isSuccess && callOnFail) {
-        this.onFail?.(response.data);
+        this.onFail?.(response.data, extraData);
       }
       const finalData: ApiResponse =
         (response.data[this.dataKey] as unknown as ApiResponse) ||
