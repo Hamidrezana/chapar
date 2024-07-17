@@ -211,10 +211,6 @@ class Chapar<
           break;
       }
       const isSuccess = this.isSuccess(response.status, response.data);
-      console.log(
-        44,
-        !isSuccess && ((this.defaultConfigs?.callOnFail && callOnFail !== false) || callOnFail),
-      );
       if (!isSuccess && ((this.defaultConfigs?.callOnFail && callOnFail !== false) || callOnFail)) {
         this.onFail?.(response.data, extraData);
       }
