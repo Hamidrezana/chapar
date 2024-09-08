@@ -40,6 +40,7 @@ export interface ChaparConstructorArgs<
   authorizationKey?: string;
   throwError?: boolean;
   successKey?: keyof Response;
+  headers?: Record<string, AnyType>;
   dataKey?: keyof Response;
   messageKey?: keyof Response;
   defaultConfigs?: Partial<DefaultConfigs>;
