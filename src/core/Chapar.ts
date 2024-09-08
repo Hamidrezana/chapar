@@ -43,6 +43,7 @@ class Chapar<
   public onFail?: OnFailCallbackType<Response>;
   public beforeRequest?: VoidFunction;
   public afterRequest?: VoidFunction;
+  public headers?: Record<string, AnyType>;
 
   constructor({
     baseUrl,
@@ -54,6 +55,7 @@ class Chapar<
     timeout,
     throwError,
     defaultConfigs,
+    headers,
     onError,
     checkStatusFunc,
     metaDataFn,
@@ -71,6 +73,7 @@ class Chapar<
       baseURL: Utils.TypeUtils.isString(baseUrl) ? (baseUrl as string) : undefined,
       headers: {
         'Content-Type': 'application/json',
+        ...(headers || {}),
       },
       timeout: (timeout || 5) * 1000,
     });
