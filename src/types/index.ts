@@ -1,4 +1,4 @@
-import { AxiosError } from 'axios';
+import { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 export type QueryType = Record<string, string | number | null | undefined>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -16,6 +16,10 @@ export type OnErrorCallbackType = <Data>(
   extraData?: AnyType,
 ) => void;
 export type OnFailCallbackType<Response> = (response: Response, extraData?: AnyType) => void;
+export type OnResponseFulfilled<Response> = (response: AxiosResponse<Response>) => void;
+export type OnResponseRejected<Response> = (error: AxiosError<Response>) => void;
+export type OnRequestFulfilled = (config: AxiosRequestConfig) => void;
+export type OnRequestRejected = (error: Error) => void;
 export type CheckStatusFuncType<Response> = (statusCode: number, response: Response) => boolean;
 export type MetaDataFnType<Response, MData> = (response: Response) => MData;
 export type BaseUrlTypeExtractor<BaseUrl> = Extract<
@@ -50,6 +54,10 @@ export interface ChaparConstructorArgs<
   onFail?: OnFailCallbackType<Response>;
   beforeRequest?: VoidFunction;
   afterRequest?: VoidFunction;
+  onResponseFulfilled?: OnResponseFulfilled<Response>;
+  onResponseRejected?: OnResponseRejected<Response>;
+  onRequestFulfilled?: OnRequestFulfilled;
+  onRequestRejected?: OnRequestRejected;
 }
 
 export interface CreateUrlArgs<BaseUrl = string> {
