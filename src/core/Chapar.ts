@@ -19,10 +19,6 @@ import {
   MetaDataFnType,
   OnFailCallbackType,
   DefaultConfigs,
-  OnResponseFulfilled,
-  OnResponseRejected,
-  OnRequestFulfilled,
-  OnRequestRejected,
 } from '../types';
 import Utils from '../utils';
 
@@ -48,10 +44,6 @@ class Chapar<
   public onFail?: OnFailCallbackType<Response>;
   public beforeRequest?: VoidFunction;
   public afterRequest?: VoidFunction;
-  public onRequestFulfilled?: OnRequestFulfilled;
-  public onResponseRejected?: OnResponseRejected<Response>;
-  public onResponseFulfilled?: OnResponseFulfilled<Response>;
-  public onRequestRejected?: OnRequestRejected;
 
   constructor({
     baseUrl,
@@ -70,10 +62,6 @@ class Chapar<
     onFail,
     beforeRequest,
     afterRequest,
-    onResponseFulfilled,
-    onResponseRejected,
-    onRequestFulfilled,
-    onRequestRejected,
   }: ChaparConstructorArgs<BaseUrl, Response, MData>) {
     this.baseUrl = baseUrl;
     this.authToken = authToken;
@@ -97,10 +85,6 @@ class Chapar<
     this.onFail = onFail;
     this.beforeRequest = beforeRequest;
     this.afterRequest = afterRequest;
-    this.onResponseFulfilled = onResponseFulfilled;
-    this.onResponseRejected = onResponseRejected;
-    this.onRequestFulfilled = onRequestFulfilled;
-    this.onRequestRejected = onRequestRejected;
   }
 
   setupInterceptors({
@@ -109,24 +93,28 @@ class Chapar<
     on403Callback,
     on404Callback,
     on500Callback,
+    onRequestFulfilled,
+    onRequestRejected,
+    onResponseFulfilled,
+    onResponseRejected,
   }: SetupInterceptorArgs<AnyType>) {
     this.agent.interceptors.request.use(
       config => {
-        this.onRequestFulfilled?.(config);
+        onRequestFulfilled?.(config);
         return config;
       },
       error => {
-        this.onRequestRejected?.(error);
+        onRequestRejected?.(error);
         return Promise.reject(error);
       },
     );
     this.agent.interceptors.response.use<AxiosResponse<Response>>(
       response => {
-        this.onResponseFulfilled?.(response);
+        onResponseFulfilled?.(response);
         return response;
       },
       error => {
-        this.onResponseRejected?.(error.toJSON());
+        onResponseRejected?.(error.toJSON());
         const statusCode = error?.response?.status;
         const res: SendChaparReturnType<AnyType> = {
           success: false,
