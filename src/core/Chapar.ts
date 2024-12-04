@@ -45,76 +45,49 @@ class Chapar<
   public beforeRequest?: VoidFunction;
   public afterRequest?: VoidFunction;
 
-  constructor({
-    baseUrl,
-    authToken,
-    authorizationKey,
-    dataKey,
-    messageKey,
-    successKey,
-    timeout,
-    throwError,
-    defaultConfigs,
-    headers,
-    onError,
-    checkStatusFunc,
-    metaDataFn,
-    onFail,
-    beforeRequest,
-    afterRequest,
-  }: ChaparConstructorArgs<BaseUrl, Response, MData>) {
-    this.baseUrl = baseUrl;
-    this.authToken = authToken;
-    this.authorizationKey = authorizationKey || 'Authorization';
-    this.messageKey = messageKey || ('message' as keyof Response);
-    this.dataKey = dataKey || ('data' as keyof Response);
-    this.successKey = successKey || ('success' as keyof Response);
+  constructor(args: ChaparConstructorArgs<BaseUrl, Response, MData>) {
+    this.baseUrl = args.baseUrl;
+    this.authToken = args.authToken;
+    this.authorizationKey = args.authorizationKey || 'Authorization';
+    this.messageKey = args.messageKey || ('message' as keyof Response);
+    this.dataKey = args.dataKey || ('data' as keyof Response);
+    this.successKey = args.successKey || ('success' as keyof Response);
     this.agent = axios.create({
-      baseURL: Utils.TypeUtils.isString(baseUrl) ? (baseUrl as string) : undefined,
+      baseURL: Utils.TypeUtils.isString(args.baseUrl) ? (args.baseUrl as string) : undefined,
       headers: {
         'Content-Type': 'application/json',
-        ...(headers || {}),
+        ...(args.headers || {}),
       },
-      timeout: (timeout || 5) * 1000,
+      timeout: (args.timeout || 5) * 1000,
     });
-    this.throwError = !!throwError;
-    this.defaultConfigs = defaultConfigs;
-    this.onError = onError;
-    this.checkStatusFuncType = checkStatusFunc;
-    this.metaDataFn = metaDataFn;
-    this.onFail = onFail;
-    this.beforeRequest = beforeRequest;
-    this.afterRequest = afterRequest;
+    this.throwError = !!args.throwError;
+    this.defaultConfigs = args.defaultConfigs;
+    this.onError = args.onError;
+    this.checkStatusFuncType = args.checkStatusFunc;
+    this.metaDataFn = args.metaDataFn;
+    this.onFail = args.onFail;
+    this.beforeRequest = args.beforeRequest;
+    this.afterRequest = args.afterRequest;
   }
 
-  setupInterceptors({
-    on400Callback,
-    on401Callback,
-    on403Callback,
-    on404Callback,
-    on500Callback,
-    onRequestFulfilled,
-    onRequestRejected,
-    onResponseFulfilled,
-    onResponseRejected,
-  }: SetupInterceptorArgs<AnyType>) {
+  setupInterceptors(cbs: SetupInterceptorArgs<AnyType>) {
     this.agent.interceptors.request.use(
       config => {
-        onRequestFulfilled?.(config);
+        cbs.onRequestFulfilled?.(config);
         return config;
       },
       error => {
-        onRequestRejected?.(error);
+        cbs.onRequestRejected?.(error);
         return Promise.reject(error);
       },
     );
     this.agent.interceptors.response.use<AxiosResponse<Response>>(
       response => {
-        onResponseFulfilled?.(response);
+        cbs.onResponseFulfilled?.(response);
         return response;
       },
       error => {
-        onResponseRejected?.(error.toJSON());
+        cbs.onResponseRejected?.(error.toJSON());
         const statusCode = error?.response?.status;
         const res: SendChaparReturnType<AnyType> = {
           success: false,
@@ -124,22 +97,21 @@ class Chapar<
         };
         switch (statusCode) {
           case 400:
-            on400Callback?.(res);
+            cbs.on400Callback?.(res);
             break;
           case 401:
-            on401Callback?.(res);
+            cbs.on401Callback?.(res);
             break;
           case 403:
-            on403Callback?.(res);
+            cbs.on403Callback?.(res);
             break;
           case 404:
-            on404Callback?.(res);
+            cbs.on404Callback?.(res);
             break;
           case 500:
-            on500Callback?.(res);
+            cbs.on500Callback?.(res);
             break;
         }
-
         return Promise.reject(error);
       },
     );
