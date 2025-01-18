@@ -169,7 +169,7 @@ class Chapar<
 
     let response: AxiosResponse<Response>;
     const finalUrl = this.createUrl(url, baseUrlType);
-    const finalHeaders = headers || {};
+    const finalHeaders: Record<string, string> = {};
     if (setToken) {
       const token = this.getAuthToken();
       if (token) {
@@ -178,7 +178,7 @@ class Chapar<
     }
     try {
       const config: AxiosRequestConfig = {
-        headers: finalHeaders,
+        headers: { ...finalHeaders, ...(headers || {}) },
         onUploadProgress,
       };
       if (callTimingFn) {
