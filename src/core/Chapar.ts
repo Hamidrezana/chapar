@@ -152,9 +152,9 @@ class Chapar<
     extraData?: AnyType,
   ): Promise<SendChaparReturnType<Result, MData>> {
     const {
-      method,
+      method = 'get',
       body,
-      headers,
+      headers = {},
       setToken,
       baseUrlType,
       throwError,
@@ -162,85 +162,124 @@ class Chapar<
       callTimingFn,
       onUploadProgress,
       dto,
-    } = {
-      ...{ method: 'get', headers: {} },
-      ...configs,
-    };
+    } = configs;
 
-    let response: AxiosResponse<Response>;
     const finalUrl = this.createUrl(url, baseUrlType);
-    const finalHeaders: Record<string, string> = {};
-    if (setToken) {
-      const token = this.getAuthToken();
-      if (token) {
-        finalHeaders[this.authorizationKey] = token;
-      }
-    }
+    const requestConfig = this.createRequestConfig(headers, setToken, onUploadProgress);
+
     try {
-      const config: AxiosRequestConfig = {
-        headers: { ...finalHeaders, ...(headers || {}) },
-        onUploadProgress,
-      };
       if (callTimingFn) {
         this.beforeRequest?.();
       }
-      switch (method) {
-        case 'post':
-        case 'put':
-        case 'patch':
-          response = await this.agent[method](finalUrl, body, config);
-          break;
-        case 'delete':
-          response = await this.agent.delete(finalUrl, {
-            data: body,
-            ...config,
-          });
-          break;
-        case 'get':
-        default:
-          response = await this.agent.get(finalUrl, config);
-          break;
-      }
-      const isSuccess = this.isSuccess(response.status, response.data);
-      if (!isSuccess && ((this.defaultConfigs?.callOnFail && callOnFail !== false) || callOnFail)) {
-        this.onFail?.(response.data, extraData);
-      }
-      const finalData: ApiResponse =
-        (response.data[this.dataKey] as unknown as ApiResponse) ||
-        (response.data as unknown as ApiResponse);
 
-      const metaData = this.metaDataFn?.(response.data);
-      return {
-        success: isSuccess,
-        statusCode: response.status,
-        data: dto ? dto(finalData, metaData) : (finalData as unknown as Result),
-        metaData: metaData || null,
-        message: response.data[this.messageKey] as unknown as string,
-      };
+      const response = await this.executeRequest(method, finalUrl, body, requestConfig);
+      return this.createResponseResult<Result, ApiResponse>(response, dto, callOnFail, extraData);
     } catch (err) {
-      const error = err as AxiosError<ChaparResponse<ApiResponse>>;
-      this.onError?.(error, extraData);
-      logger(err, {
-        fileName: 'Request Error',
-        description: JSON.stringify(error?.config),
-      });
-      if (this.shouldThrowError(throwError)) {
-        throw new ChaparError({
-          message: error.response?.data.message,
-          statusCode: error.response?.status,
-        });
-      }
-      return {
-        success: false,
-        statusCode: error.response?.status,
-        data: null,
-        metaData: null,
-      };
+      return this.createErrorResult<Result, ApiResponse>(err, throwError, extraData);
     } finally {
       if (callTimingFn) {
         this.afterRequest?.();
       }
     }
+  }
+
+  private createRequestConfig(
+    headers?: Record<string, AnyType>,
+    setToken?: boolean,
+    onUploadProgress?: AxiosRequestConfig['onUploadProgress'],
+  ): AxiosRequestConfig {
+    const authorizationHeader = this.createAuthorizationHeader(setToken);
+
+    return {
+      headers: { ...authorizationHeader, ...(headers || {}) },
+      onUploadProgress,
+    };
+  }
+
+  private createAuthorizationHeader(setToken?: boolean): Record<string, string> {
+    if (!setToken) return {};
+
+    const token = this.getAuthToken();
+    return token ? { [this.authorizationKey]: token } : {};
+  }
+
+  private executeRequest<Body>(
+    method: NonNullable<SendChaparArgs['method']>,
+    url: string,
+    body: Body | undefined,
+    config: AxiosRequestConfig,
+  ): Promise<AxiosResponse<Response>> {
+    return this.agent.request<Response>({
+      ...config,
+      method,
+      url,
+      ...(method === 'get' ? {} : { data: body }),
+    });
+  }
+
+  private createResponseResult<Result, ApiResponse>(
+    response: AxiosResponse<Response>,
+    dto: SendChaparArgs<AnyType, ApiResponse, Result, BaseUrl, MData>['dto'],
+    callOnFail?: boolean,
+    extraData?: AnyType,
+  ): SendChaparReturnType<Result, MData> {
+    const isSuccess = this.isSuccess(response.status, response.data);
+    if (!isSuccess && this.shouldCallOnFail(callOnFail)) {
+      this.onFail?.(response.data, extraData);
+    }
+
+    const finalData: ApiResponse =
+      (response.data[this.dataKey] as unknown as ApiResponse) ||
+      (response.data as unknown as ApiResponse);
+    const metaData = this.metaDataFn?.(response.data);
+
+    return {
+      success: isSuccess,
+      statusCode: response.status,
+      data: dto ? dto(finalData, metaData) : (finalData as unknown as Result),
+      metaData: metaData || null,
+      message: response.data[this.messageKey] as unknown as string,
+    };
+  }
+
+  private createErrorResult<Result, ApiResponse>(
+    err: unknown,
+    throwError?: boolean,
+    extraData?: AnyType,
+  ): SendChaparReturnType<Result, MData> {
+    const error = err as AxiosError<ChaparResponse<ApiResponse>>;
+    this.onError?.(error, extraData);
+    logger(err, {
+      fileName: 'Request Error',
+      context: {
+        method: error.config?.method,
+        url: error.config?.url,
+        baseUrl: error.config?.baseURL,
+        timeout: error.config?.timeout,
+        headers: error.config?.headers,
+        statusCode: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data,
+      },
+    });
+
+    if (this.shouldThrowError(throwError)) {
+      throw new ChaparError({
+        message: error.response?.data.message,
+        statusCode: error.response?.status,
+      });
+    }
+
+    return {
+      success: false,
+      statusCode: error.response?.status,
+      data: null,
+      metaData: null,
+    };
+  }
+
+  private shouldCallOnFail(callOnFail?: boolean): boolean {
+    return !!((this.defaultConfigs?.callOnFail && callOnFail !== false) || callOnFail);
   }
 
   private isSuccess(statusCode: number, response: Response) {
