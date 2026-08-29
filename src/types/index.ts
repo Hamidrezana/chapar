@@ -1,8 +1,22 @@
-import { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import {
+  AxiosError,
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from 'axios';
 
 export type QueryType = Record<string, string | number | null | undefined>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AnyType = any;
+export type ChaparMethod = 'get' | 'post' | 'put' | 'delete' | 'patch';
+type AxiosEnvironment = NonNullable<AxiosRequestConfig['env']>;
+export type ChaparAxiosEnvironment = Omit<AxiosEnvironment, 'fetch' | 'Request' | 'Response'> & {
+  fetch?: (input: AnyType, init?: AnyType) => Promise<AnyType>;
+  Request?: AxiosEnvironment['Request'] | null;
+  Response?: AxiosEnvironment['Response'] | null;
+};
+
 export interface ChaparResponse<Data = AnyType> {
   success: boolean;
   data: Data;
@@ -11,16 +25,14 @@ export interface ChaparResponse<Data = AnyType> {
 
 export type MultipleBaseUrlType = Record<string, string>;
 export type BaseUrlType = string | MultipleBaseUrlType;
-export type OnErrorCallbackType = <Data>(
-  err: AxiosError<ChaparResponse<Data>>,
+export type OnErrorCallbackType<Response = AnyType> = (
+  err: AxiosError<Response>,
   extraData?: AnyType,
 ) => void;
 export type OnFailCallbackType<Response> = (response: Response, extraData?: AnyType) => void;
 export type OnResponseFulfilled<Response> = (response: AxiosResponse<Response>) => void;
-export type OnResponseRejected<Response> = (
-  error: AxiosError<Response> & { status: number },
-) => void;
-export type OnRequestFulfilled = (config: AxiosRequestConfig) => void;
+export type OnResponseRejected<Response> = (error: AxiosError<Response>) => void;
+export type OnRequestFulfilled = (config: InternalAxiosRequestConfig) => void;
 export type OnRequestRejected = (error: Error) => void;
 export type CheckStatusFuncType<Response> = (statusCode: number, response: Response) => boolean;
 export type MetaDataFnType<Response, MData> = (response: Response) => MData;
@@ -41,6 +53,9 @@ export interface ChaparConstructorArgs<
   MData = AnyType,
 > {
   baseUrl?: BaseUrl;
+  agent?: AxiosInstance;
+  adapter?: AxiosRequestConfig['adapter'];
+  env?: ChaparAxiosEnvironment;
   authToken?: AuthToken;
   timeout?: number;
   authorizationKey?: string;
@@ -50,7 +65,7 @@ export interface ChaparConstructorArgs<
   dataKey?: keyof Response;
   messageKey?: keyof Response;
   defaultConfigs?: Partial<DefaultConfigs>;
-  onError?: OnErrorCallbackType;
+  onError?: OnErrorCallbackType<Response>;
   checkStatusFunc?: CheckStatusFuncType<Response>;
   metaDataFn?: MetaDataFnType<Response, MData>;
   onFail?: OnFailCallbackType<Response>;
@@ -70,15 +85,15 @@ export interface SetupAgentArgs {
 }
 
 export interface SetupInterceptorArgs<Data> {
-  onResponseFulfilled?: OnResponseFulfilled<Response>;
-  onResponseRejected?: OnResponseRejected<Response>;
+  onResponseFulfilled?: OnResponseFulfilled<Data>;
+  onResponseRejected?: OnResponseRejected<Data>;
   onRequestFulfilled?: OnRequestFulfilled;
   onRequestRejected?: OnRequestRejected;
-  on400Callback?: (res: SendChaparReturnType<Data>) => void;
-  on401Callback?: (res: SendChaparReturnType<Data>) => void;
-  on403Callback?: (res: SendChaparReturnType<Data>) => void;
-  on404Callback?: (res: SendChaparReturnType<Data>) => void;
-  on500Callback?: (res: SendChaparReturnType<Data>) => void;
+  on400Callback?: (result: SendChaparReturnType<Data>) => void;
+  on401Callback?: (result: SendChaparReturnType<Data>) => void;
+  on403Callback?: (result: SendChaparReturnType<Data>) => void;
+  on404Callback?: (result: SendChaparReturnType<Data>) => void;
+  on500Callback?: (result: SendChaparReturnType<Data>) => void;
 }
 
 export interface SendChaparArgs<
@@ -88,7 +103,7 @@ export interface SendChaparArgs<
   BaseUrl = string,
   MData = AnyType,
 > {
-  method?: 'get' | 'post' | 'put' | 'delete' | 'patch';
+  method?: ChaparMethod;
   body?: Body;
   setToken?: boolean;
   headers?: Record<string, AnyType>;

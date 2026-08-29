@@ -2,6 +2,7 @@ import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } f
 import { logger } from '../libs/Logger';
 import ChaparError from '../models/ChaparError';
 import {
+  ChaparMethod,
   ChaparResponse,
   BaseUrlType,
   CreateUrlArgs,
@@ -29,6 +30,7 @@ class Chapar<
 > {
   public baseUrl?: BaseUrl;
   private agent: AxiosInstance;
+  private timeout: number;
   public authToken?: AuthToken;
   private authorizationKey: string;
   private successKey: keyof Response;
@@ -38,7 +40,7 @@ class Chapar<
   private defaultConfigs?: Partial<DefaultConfigs>;
   private successStatusCode = [200, 201];
   public headers?: Record<string, AnyType>;
-  public onError?: OnErrorCallbackType;
+  public onError?: OnErrorCallbackType<Response>;
   public checkStatusFuncType?: CheckStatusFuncType<Response>;
   public metaDataFn?: MetaDataFnType<Response, MData>;
   public onFail?: OnFailCallbackType<Response>;
@@ -52,14 +54,17 @@ class Chapar<
     this.messageKey = args.messageKey || ('message' as keyof Response);
     this.dataKey = args.dataKey || ('data' as keyof Response);
     this.successKey = args.successKey || ('success' as keyof Response);
-    this.agent = axios.create({
-      baseURL: Utils.TypeUtils.isString(args.baseUrl) ? (args.baseUrl as string) : undefined,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(args.headers || {}),
-      },
-      timeout: (args.timeout || 5) * 1000,
-    });
+    this.headers = {
+      'Content-Type': 'application/json',
+      ...(args.headers || {}),
+    };
+    this.timeout = (args.timeout || 5) * 1000;
+    this.agent =
+      args.agent ||
+      axios.create({
+        adapter: args.adapter,
+        env: args.env as AxiosRequestConfig['env'],
+      });
     this.throwError = !!args.throwError;
     this.defaultConfigs = args.defaultConfigs;
     this.onError = args.onError;
@@ -70,7 +75,7 @@ class Chapar<
     this.afterRequest = args.afterRequest;
   }
 
-  setupInterceptors(cbs: SetupInterceptorArgs<AnyType>) {
+  setupInterceptors(cbs: SetupInterceptorArgs<Response>) {
     this.agent.interceptors.request.use(
       config => {
         cbs.onRequestFulfilled?.(config);
@@ -81,37 +86,16 @@ class Chapar<
         return Promise.reject(error);
       },
     );
-    this.agent.interceptors.response.use<AxiosResponse<Response>>(
+
+    this.agent.interceptors.response.use(
       response => {
-        cbs.onResponseFulfilled?.(response);
+        cbs.onResponseFulfilled?.(response as AxiosResponse<Response>);
         return response;
       },
-      error => {
-        cbs.onResponseRejected?.(error.toJSON());
-        const statusCode = error?.response?.status;
-        const res: SendChaparReturnType<AnyType> = {
-          success: false,
-          data: null,
-          metaData: null,
-          message: error?.response?.data?.[this.messageKey],
-        };
-        switch (statusCode) {
-          case 400:
-            cbs.on400Callback?.(res);
-            break;
-          case 401:
-            cbs.on401Callback?.(res);
-            break;
-          case 403:
-            cbs.on403Callback?.(res);
-            break;
-          case 404:
-            cbs.on404Callback?.(res);
-            break;
-          case 500:
-            cbs.on500Callback?.(res);
-            break;
-        }
+      err => {
+        const error = err as AxiosError<Response>;
+        cbs.onResponseRejected?.(error);
+        this.handleResponseStatus(error, cbs);
         return Promise.reject(error);
       },
     );
@@ -165,17 +149,24 @@ class Chapar<
     } = configs;
 
     const finalUrl = this.createUrl(url, baseUrlType);
-    const requestConfig = this.createRequestConfig(headers, setToken, onUploadProgress);
+    const requestConfig = this.createRequestConfig(
+      method,
+      finalUrl,
+      body,
+      headers,
+      setToken,
+      onUploadProgress,
+    );
 
     try {
       if (callTimingFn) {
         this.beforeRequest?.();
       }
 
-      const response = await this.executeRequest(method, finalUrl, body, requestConfig);
+      const response = await this.executeRequest(requestConfig);
       return this.createResponseResult<Result, ApiResponse>(response, dto, callOnFail, extraData);
     } catch (err) {
-      return this.createErrorResult<Result, ApiResponse>(err, throwError, extraData);
+      return this.createErrorResult<Result>(err, throwError, extraData);
     } finally {
       if (callTimingFn) {
         this.afterRequest?.();
@@ -183,15 +174,22 @@ class Chapar<
     }
   }
 
-  private createRequestConfig(
+  private createRequestConfig<Body>(
+    method: ChaparMethod,
+    url: string,
+    body: Body | undefined,
     headers?: Record<string, AnyType>,
     setToken?: boolean,
-    onUploadProgress?: AxiosRequestConfig['onUploadProgress'],
-  ): AxiosRequestConfig {
+    onUploadProgress?: (data: AnyType) => void,
+  ): AxiosRequestConfig<Body> {
     const authorizationHeader = this.createAuthorizationHeader(setToken);
 
     return {
-      headers: { ...authorizationHeader, ...(headers || {}) },
+      method,
+      url,
+      data: method === 'get' ? undefined : body,
+      headers: { ...(this.headers || {}), ...authorizationHeader, ...(headers || {}) },
+      timeout: this.timeout,
       onUploadProgress,
     };
   }
@@ -203,18 +201,8 @@ class Chapar<
     return token ? { [this.authorizationKey]: token } : {};
   }
 
-  private executeRequest<Body>(
-    method: NonNullable<SendChaparArgs['method']>,
-    url: string,
-    body: Body | undefined,
-    config: AxiosRequestConfig,
-  ): Promise<AxiosResponse<Response>> {
-    return this.agent.request<Response>({
-      ...config,
-      method,
-      url,
-      ...(method === 'get' ? {} : { data: body }),
-    });
+  private executeRequest(config: AxiosRequestConfig): Promise<AxiosResponse<Response>> {
+    return this.agent.request<Response>(config);
   }
 
   private createResponseResult<Result, ApiResponse>(
@@ -242,19 +230,18 @@ class Chapar<
     };
   }
 
-  private createErrorResult<Result, ApiResponse>(
+  private createErrorResult<Result>(
     err: unknown,
     throwError?: boolean,
     extraData?: AnyType,
   ): SendChaparReturnType<Result, MData> {
-    const error = err as AxiosError<ChaparResponse<ApiResponse>>;
+    const error = err as AxiosError<Response>;
     this.onError?.(error, extraData);
     logger(err, {
       fileName: 'Request Error',
       context: {
         method: error.config?.method,
         url: error.config?.url,
-        baseUrl: error.config?.baseURL,
         timeout: error.config?.timeout,
         headers: error.config?.headers,
         statusCode: error.response?.status,
@@ -265,7 +252,7 @@ class Chapar<
 
     if (this.shouldThrowError(throwError)) {
       throw new ChaparError({
-        message: error.response?.data.message,
+        message: error.response?.data?.[this.messageKey] as unknown as string,
         statusCode: error.response?.status,
       });
     }
@@ -276,6 +263,38 @@ class Chapar<
       data: null,
       metaData: null,
     };
+  }
+
+  private handleResponseStatus(
+    error: AxiosError<Response>,
+    cbs: SetupInterceptorArgs<Response>,
+  ): void {
+    const statusCode = error.response?.status;
+    const result: SendChaparReturnType<AnyType> = {
+      success: false,
+      statusCode,
+      data: null,
+      metaData: null,
+      message: error.response?.data?.[this.messageKey] as unknown as string,
+    };
+
+    switch (statusCode) {
+      case 400:
+        cbs.on400Callback?.(result);
+        break;
+      case 401:
+        cbs.on401Callback?.(result);
+        break;
+      case 403:
+        cbs.on403Callback?.(result);
+        break;
+      case 404:
+        cbs.on404Callback?.(result);
+        break;
+      case 500:
+        cbs.on500Callback?.(result);
+        break;
+    }
   }
 
   private shouldCallOnFail(callOnFail?: boolean): boolean {
