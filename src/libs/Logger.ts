@@ -40,11 +40,7 @@ export const logger = (message: unknown, options: LoggerArgs = {}): void => {
   const { fileName, functionCall, context, type = 'ERROR' } = options;
 
   try {
-    if (type === 'ERROR') {
-      console.error(`[Chapar] ${type}`, message || '-');
-    } else {
-      console.log(`[Chapar] ${type}`, message || '-');
-    }
+    console.log(`[Chapar] ${type}`, message || '-');
 
     if (fileName || functionCall) {
       console.table({ fileName, functionCall });
