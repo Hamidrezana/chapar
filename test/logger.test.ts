@@ -17,7 +17,7 @@ describe('Logger', () => {
   });
 
   it('logs readable context and redacts sensitive values', () => {
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const logSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
     jest.spyOn(console, 'table').mockImplementation(() => undefined);
 
@@ -36,7 +36,7 @@ describe('Logger', () => {
       },
     });
 
-    expect(errorSpy).toHaveBeenCalledWith('[Chapar] ERROR', expect.any(Error));
+    expect(logSpy).toHaveBeenCalledWith('[Chapar] ERROR', expect.any(Error));
     expect(logSpy).toHaveBeenCalledWith('Context:', {
       method: 'get',
       headers: {
